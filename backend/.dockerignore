@@ -1,0 +1,14 @@
+node_modules
+dist
+data
+*.log
+.env
+.env.*
+.git
+test
+*.db
+*.db-*
+*.key
+*.csv
+README.md
+.preview-pids.json

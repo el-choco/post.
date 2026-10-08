@@ -1,0 +1,15 @@
+node_modules
+data
+.env
+.env.*
+.git
+**/data
+**/dist
+**/test
+**/*.log
+**/*.db
+**/*.db-*
+**/*.key
+**/*.csv
+preview-*.jpg
+.preview-pids.json

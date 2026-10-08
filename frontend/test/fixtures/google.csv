@@ -1,0 +1,5 @@
+Name,Given Name,Family Name,E-mail 1 - Value,Phone 1 - Value,Notes
+Import Ada,Ada,Beispiel,ada@example.com,+49 1234,Google CSV Test
+Import Ben,Ben,Beispiel,ben@example.com,,Import-Test
+Import Ada,Ada,Beispiel,ADA@example.com,,Duplikat
+Fehler,,,ungueltig,,Keine E-Mail

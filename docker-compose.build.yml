@@ -1,0 +1,8 @@
+# Local build: docker compose -f docker-compose.yml -f docker-compose.build.yml build --pull
+services:
+  frontend:
+    build:
+      context: ./frontend
+  backend:
+    build:
+      context: ./backend

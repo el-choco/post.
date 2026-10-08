@@ -1,0 +1,22 @@
+{
+  "name": "backend",
+  "version": "1.1.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "start": "node src/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "express": "^5.2.1",
+    "imapflow": "^2.2.8",
+    "mailparser": "^3.9.36",
+    "nodemailer": "^10.0.16",
+    "sanitize-html": "^2.18.0",
+    "sqlite3": "^6.0.1"
+  }
+}

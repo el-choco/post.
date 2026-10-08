@@ -1,0 +1,8 @@
+node_modules/
+frontend/dist/
+backend/data/
+*.log
+.env
+.env.*
+!.env.example
+.preview-pids.json
