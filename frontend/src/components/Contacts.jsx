@@ -4,7 +4,6 @@ import { api, post } from "../api";
 import { useStore } from "../store";
 import { importPreview, decodeCsv } from "../lib/csv";
 import { contactImportKey } from "../lib/contactImport";
-import WorkspacePage from "./WorkspacePage";
 import ContactsView from "./ContactsView";
 import defaults from "../lib/preferences.json";
 function demoInitial() {
@@ -405,38 +404,37 @@ export default function Contacts({ onClose, onCompose, settings = defaults }) {
     }
   }
   return (
-    <WorkspacePage title={t("contacts")} onBack={onClose}>
-      <ContactsView
-        {...{
-          settings,
-          bookList,
-          bookId,
-          setBookId,
-          bookName,
-          rows,
-          editing,
-          setEditing,
-          save,
-          remove,
-          busy,
-          loading,
-          error,
-          notice,
-          newBook,
-          setNewBook,
-          createBook,
-          deleteBook,
-          preview,
-          setPreview,
-          readFile,
-          importContacts,
-          onCompose,
-          groups,
-          createGroup,
-          deleteGroup,
-        }}
-        onError={setError}
-      />
-    </WorkspacePage>
+    <ContactsView
+      onBack={onClose}
+      {...{
+        settings,
+        bookList,
+        bookId,
+        setBookId,
+        bookName,
+        rows,
+        editing,
+        setEditing,
+        save,
+        remove,
+        busy,
+        loading,
+        error,
+        notice,
+        newBook,
+        setNewBook,
+        createBook,
+        deleteBook,
+        preview,
+        setPreview,
+        readFile,
+        importContacts,
+        onCompose,
+        groups,
+        createGroup,
+        deleteGroup,
+      }}
+      onError={setError}
+    />
   );
 }

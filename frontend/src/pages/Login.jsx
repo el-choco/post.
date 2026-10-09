@@ -136,7 +136,9 @@ export default function Login() {
           </button>
         </form>
       </main>
-      <footer className="login-footer">post. — a calmer inbox</footer>
+      <footer className="login-footer">
+        post. — a calmer inbox · v{__APP_VERSION__}
+      </footer>
     </div>
   );
 }

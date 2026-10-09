@@ -1,6 +1,6 @@
 services:
   frontend:
-    image: ${DOCKERHUB_NAMESPACE:-paquele}/post-webmail-frontend:${WEBMAIL_VERSION:-1.1.0}
+    image: ${DOCKERHUB_NAMESPACE:-paquele}/post-webmail-frontend:${WEBMAIL_VERSION:-latest}
     ports:
       - "${WEBMAIL_PORT:-8886}:80"
     depends_on:
@@ -13,7 +13,7 @@ services:
       timeout: 5s
       retries: 3
   backend:
-    image: ${DOCKERHUB_NAMESPACE:-paquele}/post-webmail-backend:${WEBMAIL_VERSION:-1.1.0}
+    image: ${DOCKERHUB_NAMESPACE:-paquele}/post-webmail-backend:${WEBMAIL_VERSION:-latest}
     init: true
     environment:
       NODE_ENV: production

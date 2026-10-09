@@ -1,5 +1,7 @@
 # 🐳 post. auf Docker Hub veröffentlichen
 
+Für die korrigierte Veröffentlichung von Version 1.1.2 siehe zuerst [UPDATE-1.1.2.md](UPDATE-1.1.2.md). Dort werden die neuen Images direkt mit dem richtigen Namen gebaut und vor dem Upload geprüft.
+
 Die Anwendung verwendet zwei Images:
 
 | Bestandteil               | Repository                      |
@@ -21,7 +23,7 @@ Bei der Passwortabfrage einen Docker-Hub-Zugriffstoken mit Schreibberechtigung v
 
 ## 🏗️ 2. Images bauen und veröffentlichen
 
-Standardversion ist `1.1.0`. Eine vorhandene `.env` mit anderen Werten für `DOCKERHUB_NAMESPACE` oder `WEBMAIL_VERSION` überschreibt diese Vorgabe. Vor dem Build die aufgelösten Image-Namen prüfen:
+Standardversion ist `1.1.2`. Eine vorhandene `.env` mit anderen Werten für `DOCKERHUB_NAMESPACE` oder `WEBMAIL_VERSION` überschreibt diese Vorgabe. Vor dem Build die aufgelösten Image-Namen prüfen:
 
 ```sh
 docker compose -f docker-compose.yml -f docker-compose.build.yml config --images
@@ -33,16 +35,16 @@ Damit werden beide Images für die Architektur der verwendeten Docker-Engine geb
 
 ### 🏷️ Zusätzlich als `latest` veröffentlichen
 
-Nach erfolgreichem Build und Upload von `1.1.0`:
+Nach erfolgreichem Build und Upload von `1.1.2`:
 
 ```sh
-docker tag paquele/post-webmail-frontend:1.1.0 paquele/post-webmail-frontend:latest
-docker tag paquele/post-webmail-backend:1.1.0 paquele/post-webmail-backend:latest
+docker tag paquele/post-webmail-frontend:1.1.2 paquele/post-webmail-frontend:latest
+docker tag paquele/post-webmail-backend:1.1.2 paquele/post-webmail-backend:latest
 docker push paquele/post-webmail-frontend:latest
 docker push paquele/post-webmail-backend:latest
 ```
 
-Versions-Tags für spätere Updates erhöhen, beispielsweise auf `1.1.1`. `latest` kann anschließend auf die neue Version zeigen. Ein veröffentlichtes Versions-Tag möglichst nicht nachträglich ersetzen.
+Versions-Tags für spätere Updates erhöhen, beispielsweise auf `1.1.3`. `latest` kann anschließend auf die neue Version zeigen. Ein veröffentlichtes Versions-Tag möglichst nicht nachträglich ersetzen.
 
 ## 🌍 Optional: AMD64 und ARM64 gemeinsam veröffentlichen
 
@@ -64,8 +66,8 @@ docker buildx inspect --bootstrap
 Beide Images mit Versions- und `latest`-Tag bauen und direkt hochladen:
 
 ```sh
-docker buildx build --pull --platform linux/amd64,linux/arm64 --tag paquele/post-webmail-frontend:1.1.0 --tag paquele/post-webmail-frontend:latest --push ./frontend
-docker buildx build --pull --platform linux/amd64,linux/arm64 --tag paquele/post-webmail-backend:1.1.0 --tag paquele/post-webmail-backend:latest --push ./backend
+docker buildx build --pull --platform linux/amd64,linux/arm64 --tag paquele/post-webmail-frontend:1.1.2 --tag paquele/post-webmail-frontend:latest --push ./frontend
+docker buildx build --pull --platform linux/amd64,linux/arm64 --tag paquele/post-webmail-backend:1.1.2 --tag paquele/post-webmail-backend:latest --push ./backend
 ```
 
 Die Images werden direkt in die Registry geschrieben und müssen anschließend zum lokalen Start gepullt werden. Mit dieser Variante ist der separate `docker tag`/`docker push`-Schritt nicht nötig.
@@ -78,7 +80,7 @@ Beispiel für die `.env`:
 
 ```dotenv
 DOCKERHUB_NAMESPACE=paquele
-WEBMAIL_VERSION=1.1.0
+WEBMAIL_VERSION=1.1.2
 WEBMAIL_PORT=8886
 # Nur setzen, wenn du bereits dieses Datenverzeichnis verwendest:
 # WEBMAIL_DATA_DIR=/mnt/seagate/webmail/data
@@ -100,7 +102,7 @@ Die Webmail ist unter `http://SERVER-IP:8886` erreichbar. Für Internetzugriff H
 Nach Veröffentlichung einer neuen Version `WEBMAIL_VERSION` in der Server-`.env` anpassen:
 
 ```dotenv
-WEBMAIL_VERSION=1.1.1
+WEBMAIL_VERSION=1.1.3
 ```
 
 Danach:
@@ -115,8 +117,8 @@ Die Container werden bei geänderten Images ersetzt; das konfigurierte Datenvolu
 ## 🔍 Kontrolle und Protokolle
 
 ```sh
-docker buildx imagetools inspect paquele/post-webmail-frontend:1.1.0
-docker buildx imagetools inspect paquele/post-webmail-backend:1.1.0
+docker buildx imagetools inspect paquele/post-webmail-frontend:1.1.2
+docker buildx imagetools inspect paquele/post-webmail-backend:1.1.2
 docker compose logs --tail=100
 ```
 

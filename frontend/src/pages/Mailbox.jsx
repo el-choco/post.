@@ -351,7 +351,8 @@ export default function Mailbox() {
               ...active,
               to: [active.to],
               cc: [],
-              html: "",
+              html: active.html || "",
+              hasHtml: Boolean(active.html),
               attachments: active.attachments || [],
             }
           : await api(
@@ -910,43 +911,62 @@ export default function Mailbox() {
             )}
           </div>
         </div>
-        <div className="pagination">
-          <span>
-            {t("messages_count", {
-              start: total ? (page - 1) * settings.pageSize + 1 : 0,
-              end: Math.min(page * settings.pageSize, total),
-              total,
-            })}
-          </span>
-          <button
-            title={t("firstPage")}
-            disabled={page === 1 || loading}
-            onClick={() => setPage(1)}
-          >
-            <ChevronsLeft size={15} />
-          </button>
-          <button
-            aria-label={t("previousPage")}
-            disabled={page === 1 || loading}
-            onClick={() => setPage(page - 1)}
-          >
-            <ChevronLeft size={15} />
-          </button>
-          <span className="page-number">{page}</span>
-          <button
-            aria-label={t("nextPage")}
-            disabled={page === maxPage || loading}
-            onClick={() => setPage(page + 1)}
-          >
-            <ChevronRight size={15} />
-          </button>
-          <button
-            aria-label={t("lastPage")}
-            disabled={page === maxPage || loading}
-            onClick={() => setPage(maxPage)}
-          >
-            <ChevronsRight size={15} />
-          </button>
+        <div className="list-view-controls">
+          <div className="layout-switch">
+            {[
+              ["list", List],
+              ["bottom", PanelBottom],
+              ["right", PanelRight],
+            ].map(([value, Icon]) => (
+              <button
+                key={value}
+                className={settings.layout === value ? "active" : ""}
+                title={t(`layout_${value}`)}
+                aria-pressed={settings.layout === value}
+                onClick={() => changeLayout(value)}
+              >
+                <Icon size={18} />
+              </button>
+            ))}
+          </div>
+          <div className="pagination">
+            <span>
+              {t("messages_count", {
+                start: total ? (page - 1) * settings.pageSize + 1 : 0,
+                end: Math.min(page * settings.pageSize, total),
+                total,
+              })}
+            </span>
+            <button
+              title={t("firstPage")}
+              disabled={page === 1 || loading}
+              onClick={() => setPage(1)}
+            >
+              <ChevronsLeft size={15} />
+            </button>
+            <button
+              aria-label={t("previousPage")}
+              disabled={page === 1 || loading}
+              onClick={() => setPage(page - 1)}
+            >
+              <ChevronLeft size={15} />
+            </button>
+            <span className="page-number">{page}</span>
+            <button
+              aria-label={t("nextPage")}
+              disabled={page === maxPage || loading}
+              onClick={() => setPage(page + 1)}
+            >
+              <ChevronRight size={15} />
+            </button>
+            <button
+              aria-label={t("lastPage")}
+              disabled={page === maxPage || loading}
+              onClick={() => setPage(maxPage)}
+            >
+              <ChevronsRight size={15} />
+            </button>
+          </div>
         </div>
       </div>
       <div className="table-scroll">
@@ -1382,20 +1402,173 @@ export default function Mailbox() {
                     <Settings size={16} />
                   </button>
                 </div>
-                <span className="sidebar-caption">a calmer inbox</span>
+                <span className="sidebar-caption">
+                  a calmer inbox · v{__APP_VERSION__}
+                </span>
               </div>
             </aside>
           </Panel>
           <PanelResizeHandle className="resize-handle sidebar-resize" />
           <Panel id="workspace" minSize={45}>
             <main className="mail-workspace">
-              <div className="mail-heading">
-                <div>
+              <header className="mail-heading">
+                <div className="mail-heading-title">
                   <span className="eyebrow">{t("mail")}</span>
                   <h1>
                     {title}
                     <span className="total-badge">{total}</span>
                   </h1>
+                </div>
+                <div
+                  className="action-toolbar"
+                  role="toolbar"
+                  aria-label={t("mail")}
+                >
+                  <div className="toolbar-actions">
+                    <Tool
+                      icon={RefreshCw}
+                      label={t("refresh")}
+                      onClick={async () => {
+                        setBusy(true);
+                        try {
+                          if (!user.demo) await post("/refresh", {});
+                          setRefresh((value) => value + 1);
+                        } catch (e) {
+                          showError(e);
+                        } finally {
+                          setBusy(false);
+                        }
+                      }}
+                      disabled={loading || busy}
+                    />
+                    <span className="toolbar-separator" />
+                    <Tool
+                      icon={Reply}
+                      label={t("reply")}
+                      onClick={() => respond("reply")}
+                      disabled={!detail || busy}
+                    />
+                    <Tool
+                      icon={ReplyAll}
+                      label={t("replyAll")}
+                      onClick={() => respond("replyAll")}
+                      disabled={!detail || busy}
+                    />
+                    <Tool
+                      icon={Forward}
+                      label={t("forward")}
+                      onClick={() => respond("forward")}
+                      disabled={!detail || busy}
+                    />
+                    <span className="toolbar-separator" />
+                    <Tool
+                      icon={Trash2}
+                      label={t("delete")}
+                      onClick={() => bulk("delete")}
+                      disabled={!selected.size || busy}
+                    />
+                    <Tool
+                      icon={Archive}
+                      label={t("archive")}
+                      onClick={() => bulk("archive")}
+                      disabled={!selected.size || busy}
+                    />
+                    <Tool
+                      icon={ShieldAlert}
+                      label={t("spam")}
+                      onClick={() => bulk("spam")}
+                      disabled={!selected.size || busy}
+                    />
+                    <div className="dropdown">
+                      <Tool
+                        icon={CheckCheck}
+                        label={t("mark")}
+                        onClick={() => setMenu(menu === "mark" ? "" : "mark")}
+                        disabled={!selected.size || busy}
+                      />
+                      {menu === "mark" && (
+                        <div className="dropdown-menu">
+                          {[
+                            ["markRead", "add", "\\Seen"],
+                            ["markUnread", "remove", "\\Seen"],
+                            ["flag", "add", "\\Flagged"],
+                            ["unflag", "remove", "\\Flagged"],
+                          ].map(([key, type, flag]) => (
+                            <button
+                              key={key}
+                              onClick={() => bulk("flags", { [type]: [flag] })}
+                            >
+                              {t(key)}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="dropdown">
+                      <Tool
+                        icon={MoreHorizontal}
+                        label={t("more")}
+                        onClick={() => setMenu(menu === "more" ? "" : "more")}
+                      />
+                      {menu === "more" && (
+                        <div className="dropdown-menu more-menu">
+                          <button
+                            disabled={!detail}
+                            onClick={() => {
+                              setMenu("");
+                              const printWindow = window.open("", "_blank");
+                              if (!printWindow) {
+                                setError(t("error"));
+                                return;
+                              }
+                              printWindow.opener = null;
+                              const escape = (value) =>
+                                String(value || "")
+                                  .replace(/&/g, "&amp;")
+                                  .replace(/</g, "&lt;")
+                                  .replace(/>/g, "&gt;");
+                              printWindow.addEventListener(
+                                "load",
+                                () => printWindow.print(),
+                                { once: true },
+                              );
+                              printWindow.document.write(
+                                `<!doctype html><html><head><title>${escape(detail.subject)}</title><style>body{font:14px/1.6 Arial;margin:40px}img,table{max-width:100%}pre{white-space:pre-wrap;font:inherit}</style></head><body><h1>${escape(detail.subject)}</h1><p>${escape(detail.from.address)} · ${escape(detail.date)}</p>${detail.html || `<pre>${escape(detail.text)}</pre>`}</body></html>`,
+                              );
+                              printWindow.document.close();
+                            }}
+                          >
+                            <Printer size={16} />
+                            {t("print")}
+                          </button>
+                          <button
+                            disabled={!detail}
+                            onClick={() => download("source")}
+                          >
+                            <Download size={16} />
+                            {t("export")}
+                          </button>
+                          <button disabled={!detail} onClick={viewSource}>
+                            <Code size={16} />
+                            {t("source")}
+                          </button>
+                          <div className="menu-label">{t("move")}</div>
+                          {folders
+                            .filter((f) => f.selectable !== false)
+                            .map((f) => (
+                              <button
+                                key={f.path}
+                                disabled={!selected.size || busy}
+                                onClick={() => bulk("move", { dest: f.path })}
+                              >
+                                <Folder size={15} />
+                                {folderLabel(f)}
+                              </button>
+                            ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
                 <div
                   className={`search-box ${searching ? "searching" : ""}`}
@@ -1440,171 +1613,7 @@ export default function Mailbox() {
                     <Search size={19} />
                   )}
                 </div>
-              </div>
-              <div className="action-toolbar">
-                <div className="toolbar-actions">
-                  <Tool
-                    icon={RefreshCw}
-                    label={t("refresh")}
-                    onClick={async () => {
-                      setBusy(true);
-                      try {
-                        if (!user.demo) await post("/refresh", {});
-                        setRefresh((value) => value + 1);
-                      } catch (e) {
-                        showError(e);
-                      } finally {
-                        setBusy(false);
-                      }
-                    }}
-                    disabled={loading || busy}
-                  />
-                  <span className="toolbar-separator" />
-                  <Tool
-                    icon={Reply}
-                    label={t("reply")}
-                    onClick={() => respond("reply")}
-                    disabled={!detail || busy}
-                  />
-                  <Tool
-                    icon={ReplyAll}
-                    label={t("replyAll")}
-                    onClick={() => respond("replyAll")}
-                    disabled={!detail || busy}
-                  />
-                  <Tool
-                    icon={Forward}
-                    label={t("forward")}
-                    onClick={() => respond("forward")}
-                    disabled={!detail || busy}
-                  />
-                  <span className="toolbar-separator" />
-                  <Tool
-                    icon={Trash2}
-                    label={t("delete")}
-                    onClick={() => bulk("delete")}
-                    disabled={!selected.size || busy}
-                  />
-                  <Tool
-                    icon={Archive}
-                    label={t("archive")}
-                    onClick={() => bulk("archive")}
-                    disabled={!selected.size || busy}
-                  />
-                  <Tool
-                    icon={ShieldAlert}
-                    label={t("spam")}
-                    onClick={() => bulk("spam")}
-                    disabled={!selected.size || busy}
-                  />
-                  <div className="dropdown">
-                    <Tool
-                      icon={CheckCheck}
-                      label={t("mark")}
-                      onClick={() => setMenu(menu === "mark" ? "" : "mark")}
-                      disabled={!selected.size || busy}
-                    />
-                    {menu === "mark" && (
-                      <div className="dropdown-menu">
-                        {[
-                          ["markRead", "add", "\\Seen"],
-                          ["markUnread", "remove", "\\Seen"],
-                          ["flag", "add", "\\Flagged"],
-                          ["unflag", "remove", "\\Flagged"],
-                        ].map(([key, type, flag]) => (
-                          <button
-                            key={key}
-                            onClick={() => bulk("flags", { [type]: [flag] })}
-                          >
-                            {t(key)}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <div className="dropdown">
-                    <Tool
-                      icon={MoreHorizontal}
-                      label={t("more")}
-                      onClick={() => setMenu(menu === "more" ? "" : "more")}
-                    />
-                    {menu === "more" && (
-                      <div className="dropdown-menu more-menu">
-                        <button
-                          disabled={!detail}
-                          onClick={() => {
-                            setMenu("");
-                            const printWindow = window.open("", "_blank");
-                            if (!printWindow) {
-                              setError(t("error"));
-                              return;
-                            }
-                            printWindow.opener = null;
-                            const escape = (value) =>
-                              String(value || "")
-                                .replace(/&/g, "&amp;")
-                                .replace(/</g, "&lt;")
-                                .replace(/>/g, "&gt;");
-                            printWindow.addEventListener(
-                              "load",
-                              () => printWindow.print(),
-                              { once: true },
-                            );
-                            printWindow.document.write(
-                              `<!doctype html><html><head><title>${escape(detail.subject)}</title><style>body{font:14px/1.6 Arial;margin:40px}img,table{max-width:100%}pre{white-space:pre-wrap;font:inherit}</style></head><body><h1>${escape(detail.subject)}</h1><p>${escape(detail.from.address)} · ${escape(detail.date)}</p>${detail.html || `<pre>${escape(detail.text)}</pre>`}</body></html>`,
-                            );
-                            printWindow.document.close();
-                          }}
-                        >
-                          <Printer size={16} />
-                          {t("print")}
-                        </button>
-                        <button
-                          disabled={!detail}
-                          onClick={() => download("source")}
-                        >
-                          <Download size={16} />
-                          {t("export")}
-                        </button>
-                        <button disabled={!detail} onClick={viewSource}>
-                          <Code size={16} />
-                          {t("source")}
-                        </button>
-                        <div className="menu-label">{t("move")}</div>
-                        {folders
-                          .filter((f) => f.selectable !== false)
-                          .map((f) => (
-                            <button
-                              key={f.path}
-                              disabled={!selected.size || busy}
-                              onClick={() => bulk("move", { dest: f.path })}
-                            >
-                              <Folder size={15} />
-                              {folderLabel(f)}
-                            </button>
-                          ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="layout-switch">
-                  {[
-                    ["list", List],
-                    ["bottom", PanelBottom],
-                    ["right", PanelRight],
-                  ].map(([value, Icon]) => (
-                    <button
-                      key={value}
-                      className={settings.layout === value ? "active" : ""}
-                      title={t(`layout_${value}`)}
-                      aria-pressed={settings.layout === value}
-                      onClick={() => changeLayout(value)}
-                    >
-                      <Icon size={18} />
-                    </button>
-                  ))}
-                </div>
-              </div>
+              </header>
               {searching && (
                 <div className="search-progress" role="status">
                   <LoaderCircle size={14} className="spinner" />

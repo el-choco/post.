@@ -140,4 +140,8 @@ export const demoMessages = examples.map(([name, subject, text], i) => ({
   flagged: i === 1,
   attachment: i === 1,
   attachments: i === 1 ? demoAttachments : [],
+  html:
+    i === 1
+      ? `<p>Hallo Alex,</p><p>die ersten Entwürfe sind fertig. Was hältst du davon?</p><p>Viele Grüße<br>Studio Nord</p><blockquote><h3>Weitergeleitete Nachricht</h3>${Array.from({ length: 24 }, (_, index) => `<p>Notiz ${index + 1}: Die Projektunterlagen findest du in den Anhängen. Dies ist eine längere HTML-Nachricht zur Vorschau.</p>`).join("")}</blockquote>`
+      : "",
 }));

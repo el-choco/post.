@@ -18,7 +18,9 @@ const {
 } = require("./settings");
 
 const app = express();
-app.get("/api/health", (req, res) => res.json({ status: "ok" }));
+app.get("/api/health", (req, res) =>
+  res.json({ status: "ok", version: require("../package.json").version }),
+);
 app.set("trust proxy", true);
 app.use(express.json({ limit: "40mb" }));
 app.use("/api", (req, res, next) => {
