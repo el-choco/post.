@@ -1,4 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  lazy,
+  Suspense,
+} from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import i18n from "../i18n";
@@ -39,6 +46,7 @@ import {
   Code,
   LoaderCircle,
   ArrowLeft,
+  CalendarDays,
 } from "lucide-react";
 import { Panel, PanelGroup, PanelResizeHandle } from "../components/Panels";
 import { useStore } from "../store";
@@ -61,6 +69,7 @@ import { desktopNotification, playSound } from "../lib/notifications";
 import MessageBody from "../components/MessageBody";
 import MessageAttachments from "../components/MessageAttachments";
 import WindowFrame from "../components/WindowFrame";
+const CalendarPage = lazy(() => import("../components/CalendarPage"));
 const folderTypes = {
   "\\Inbox": ["inbox", Inbox],
   "\\Sent": ["sent", Send],
@@ -93,7 +102,9 @@ export default function Mailbox() {
   const { t } = useTranslation();
   const [viewParams, setViewParams] = useSearchParams();
   const view = viewParams.get("view") || "mail";
-  const section = ["contacts", "settings"].includes(view) ? view : "mail";
+  const section = ["contacts", "settings", "calendar"].includes(view)
+    ? view
+    : "mail";
   const routeUid = Number(viewParams.get("uid"));
   const routeFolder = viewParams.get("folder") || "INBOX";
   const [settings, setSettings] = useState(defaults);
@@ -1301,6 +1312,14 @@ export default function Mailbox() {
             {t("contacts")}
           </button>
           <button
+            className={section === "calendar" ? "active" : ""}
+            aria-current={section === "calendar" ? "page" : undefined}
+            onClick={() => navigateSection("calendar")}
+          >
+            <CalendarDays size={18} />
+            {t("calendar.title")}
+          </button>
+          <button
             className={section === "settings" ? "active" : ""}
             aria-current={section === "settings" ? "page" : undefined}
             onClick={() => navigateSection("settings")}
@@ -1712,6 +1731,18 @@ export default function Mailbox() {
               newCompose(to);
             }}
           />
+        </div>
+      )}
+      {section === "calendar" && (
+        <div className="workspace">
+          <Suspense
+            fallback={<div className="empty-state">{t("loading")}</div>}
+          >
+            <CalendarPage
+              settings={settings}
+              onBack={() => navigateSection("mail")}
+            />
+          </Suspense>
         </div>
       )}
       {compose && (

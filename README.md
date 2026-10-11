@@ -25,11 +25,14 @@
 | 📁 Ordner | Hierarchie, Unterordner, Erstellen, Löschen und Sichtbarkeit |
 | 🗂️ Archiv | Frei wählbarer Archivordner und verschiedene Ablagestrukturen |
 | 👥 Kontakte | Adressbücher, Gruppen, Kontaktbilder und erweiterte Kontaktinformationen |
+| 📅 Kalender | Persönliche SQLite-Kalender, CalDAV, Google/Microsoft-Anbindung, ICS, Monats-/Wochen-/Terminansicht |
 | 📥 Import | Google-/Outlook-CSV, einschließlich Kontakten ohne E-Mail-Adresse |
 | 📤 Export | Kontakte als CSV/vCard; Nachrichten als EML |
 | ⚙️ Einstellungen | Sprache, Darstellung, Identität, Signatur, Spezialordner und Benachrichtigungen |
 
 ### 🚀 Installation mit Docker Compose
+
+Die optionale Kalenderanbindung und OAuth-Einrichtung sind in [CALENDAR.md](CALENDAR.md) beschrieben. Client-ID und Client-Secret für Google/Microsoft können direkt über **Kalender → Kalender hinzufügen → Kalender verbinden** eingegeben werden. Google benötigt dafür eine HTTPS-Domain. Der persönliche Kalender funktioniert ohne zusätzliche Konfiguration.
 
 **Voraussetzungen:**
 
@@ -331,11 +334,14 @@ Die Demo verbindet sich mit keinem Mailserver und versendet keine Nachrichten.
 | 📁 Folders | Hierarchy, subfolders, creation, deletion and visibility |
 | 🗂️ Archive | Configurable archive folder and filing structures |
 | 👥 Contacts | Address books, groups, contact pictures and detailed profiles |
+| 📅 Calendars | Personal SQLite calendars, CalDAV, Google/Microsoft connections, ICS, month/week/agenda views |
 | 📥 Import | Google/Outlook CSV, including contacts without email addresses |
 | 📤 Export | Contacts as CSV/vCard; messages as EML |
 | ⚙️ Settings | Language, appearance, identity, signature, special folders and notifications |
 
 ### 🚀 Installation with Docker Compose
+
+Optional calendar connections and OAuth setup are described in [CALENDAR.md](CALENDAR.md). Enter Google/Microsoft client credentials directly through **Calendar → Add calendar → Connect calendar**. Google requires an HTTPS domain. The personal calendar works without additional configuration.
 
 **Requirements:**
 

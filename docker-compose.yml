@@ -18,8 +18,19 @@ services:
     environment:
       NODE_ENV: production
       DATA_DIR: /app/data
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID:-}
+      MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET:-}
+      MICROSOFT_TENANT_ID: ${MICROSOFT_TENANT_ID:-common}
+      ALLOW_PRIVATE_CALDAV: ${ALLOW_PRIVATE_CALDAV:-false}
     volumes:
       - ${WEBMAIL_DATA_DIR:-webmail_data}:/app/data
+    networks:
+      default:
+        aliases:
+          - backend
     restart: unless-stopped
     healthcheck:
       test:

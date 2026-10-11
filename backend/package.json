@@ -1,6 +1,6 @@
 {
   "name": "backend",
-  "version": "1.1.2",
+  "version": "1.2.1",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -13,10 +13,14 @@
   "type": "commonjs",
   "dependencies": {
     "express": "^5.2.1",
+    "fast-xml-parser": "^5.11.2",
+    "ical.js": "^2.2.1",
     "imapflow": "^2.2.8",
+    "ipaddr.js": "^2.5.0",
     "mailparser": "^3.9.36",
     "nodemailer": "^10.0.16",
     "sanitize-html": "^2.18.0",
-    "sqlite3": "^6.0.1"
+    "sqlite3": "^6.0.1",
+    "timezones-ical-library": "^2.3.2"
   }
 }

@@ -1277,6 +1277,7 @@ app.post(
 
 /* ------------------------------ Contacts ------------------------------ */
 app.use("/api", require("./contacts").createContactsRouter(auth, wrap));
+app.use("/api/calendar", require("./calendar").createCalendarRouter(auth, wrap));
 
 /* ------------------------------- Errors ------------------------------- */
 

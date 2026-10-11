@@ -13,6 +13,12 @@ for (const file of [
   "src/components/MessageAttachments.jsx",
   "src/components/SettingsPage.jsx",
   "src/components/Contacts.jsx",
+  "src/components/CalendarPage.jsx",
+  "src/components/CalendarOAuthSetup.jsx",
+  "src/components/WorkspacePage.jsx",
+  "src/components/ContactsView.jsx",
+  "src/lib/calendar.js",
+  "src/lib/calendarOAuth.js",
   "src/index.css",
 ]) {
   sourceHash.update(file).update(readFileSync(new URL(file, import.meta.url)));

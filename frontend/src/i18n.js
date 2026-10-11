@@ -4,10 +4,12 @@ import de from "./locales/de.json";
 import en from "./locales/en.json";
 import featuresDe from "./locales/features.de.json";
 import featuresEn from "./locales/features.en.json";
+import calendarDe from "./locales/calendar.de.json";
+import calendarEn from "./locales/calendar.en.json";
 i18n.use(initReactI18next).init({
   resources: {
-    de: { translation: { ...de, ...featuresDe } },
-    en: { translation: { ...en, ...featuresEn } },
+    de: { translation: { ...de, ...featuresDe, calendar: calendarDe } },
+    en: { translation: { ...en, ...featuresEn, calendar: calendarEn } },
   },
   lng: localStorage.getItem("language") || "de",
   fallbackLng: "de",

@@ -106,6 +106,7 @@ async function init() {
   );
 
   await run("DELETE FROM sessions WHERE expires_at < ?", [Date.now()]);
+  await require('./calendar').initCalendar();
 }
 
 // A dedicated connection keeps imports atomic without interleaving unrelated writes.
