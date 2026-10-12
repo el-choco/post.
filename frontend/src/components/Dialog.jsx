@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useId } from "react";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 export default function Dialog({
@@ -9,6 +9,7 @@ export default function Dialog({
   full = false,
 }) {
   const ref = useRef();
+  const titleId = useId();
   const closeRef = useRef(onClose);
   const { t } = useTranslation();
   useEffect(() => {
@@ -30,10 +31,11 @@ export default function Dialog({
   return (
     <dialog
       ref={ref}
+      aria-labelledby={titleId}
       className={`dialog ${wide ? "wide" : ""} ${full ? "full" : ""}`}
     >
       <header className="dialog-header">
-        <h2>{title}</h2>
+        <h2 id={titleId}>{title}</h2>
         <button
           className="icon-button"
           onClick={onClose}

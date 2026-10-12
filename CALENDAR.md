@@ -1,4 +1,4 @@
-# 📅 Kalender / Calendars — post. 1.2.1
+# 📅 Kalender / Calendars — post. 1.2.2
 
 ## Deutsch
 
@@ -9,6 +9,7 @@ Der neue Bereich **Kalender** funktioniert unabhängig vom Mailkonto. Die Anmeld
 - Persönlicher Kalender und zusätzliche lokale Kalender in SQLite, automatisch angelegt.
 - Monats-, Wochen- und Terminlistenansicht; mehrere Kalender mit eigenen Farben und Sichtbarkeit.
 - Termine erstellen, bearbeiten und löschen; ganztägige und mehrtägige Termine, Ort und Notizen.
+- In der Monats- oder Wochenansicht auf eine freie Fläche im Tagesfeld klicken: Das Termin-Popup übernimmt das Datum. Auch „Neuer Termin“ und bestehende Termine öffnen dieses Popup. Mit Abbrechen, Schließen oder Escape schließen; Speichern legt den Termin im ausgewählten Kalender an.
 - Lokale Terminserien: täglich, wöchentlich, monatlich und jährlich. Änderungen und Löschen gelten für die ganze Serie und werden entsprechend angezeigt.
 - ICS-Dateien in lokale Kalender importieren und vollständige lokale Kalender exportieren. Bestehende UIDs werden beim Import übersprungen. ICS-Abonnements sind schreibgeschützt.
 - Kalenderdaten sind pro Webmail-Konto getrennt. Zugangsdaten und OAuth-Tokens werden mit dem bestehenden Schlüssel im Datenvolume verschlüsselt.
@@ -91,6 +92,7 @@ The **Calendar** workspace is independent of your mail account. Webmail still us
 - Automatically provisioned personal SQLite calendar and additional local calendars.
 - Month, week and agenda views; calendar colors and visibility controls.
 - Create, edit and delete events, including all-day/multi-day events, location and notes.
+- Click an empty area in a day cell in month or week view to open the event popup with that date selected. New event and existing events also open the popup. Cancel, Close or Escape dismiss it; Save writes to the selected calendar.
 - Daily, weekly, monthly and yearly local recurring events. Local and CalDAV series edits/deletions apply to the entire series.
 - Import ICS into local calendars and export their complete contents. Existing UIDs are skipped. ICS subscriptions are read-only.
 - Calendar data is isolated per webmail account. Credentials and OAuth tokens are encrypted using the existing key in the data volume.

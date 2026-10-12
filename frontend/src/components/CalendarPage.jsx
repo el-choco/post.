@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import WorkspacePage from "./WorkspacePage";
 import CalendarOAuthSetup from "./CalendarOAuthSetup";
+import Dialog from "./Dialog";
 import { api, post } from "../api";
 import { useStore } from "../store";
 import {
@@ -33,6 +34,39 @@ import {
 } from "../lib/calendar";
 
 const demoKey = "post.demo.calendar";
+function CalendarEditorPanel({ event, title, onClose, children }) {
+  const { t } = useTranslation();
+  const content = useRef(null);
+  useEffect(() => {
+    if (event)
+      content.current
+        ?.querySelector('input:not(:disabled):not([type="checkbox"])')
+        ?.focus();
+  }, [event]);
+  if (event)
+    return (
+      <Dialog title={title} onClose={onClose}>
+        <div ref={content} className="calendar-editor calendar-event-editor">
+          {children}
+        </div>
+      </Dialog>
+    );
+  return (
+    <aside className="calendar-editor">
+      <header>
+        <h2>{title}</h2>
+        <button
+          className="icon-button"
+          onClick={onClose}
+          aria-label={t("close")}
+        >
+          <X size={18} />
+        </button>
+      </header>
+      {children}
+    </aside>
+  );
+}
 function demoData() {
   try {
     const value = JSON.parse(localStorage.getItem(demoKey));
@@ -206,6 +240,7 @@ export default function CalendarPage({ settings, onBack }) {
     }
   }
   function newEvent(day = anchor) {
+    if (busy) return;
     const calendar = writable.find((c) => visible.has(c.id)) || writable[0];
     if (!calendar) {
       setError("calendar.errors.readOnly");
@@ -242,6 +277,12 @@ export default function CalendarPage({ settings, onBack }) {
   }
   function update(key, value) {
     setEditor((current) => ({ ...current, [key]: value }));
+  }
+  function closeEditor() {
+    if (busy) return;
+    setEditor(null);
+    setConfirm(null);
+    setError("");
   }
   async function saveEvent(e) {
     e.preventDefault();
@@ -530,7 +571,7 @@ export default function CalendarPage({ settings, onBack }) {
         </div>
       }
     >
-      {error && (
+      {error && editor?.mode !== "event" && (
         <div className="notice error" role="alert">
           {t(error)}
           <button
@@ -686,16 +727,19 @@ export default function CalendarPage({ settings, onBack }) {
                   className={`calendar-day ${day === today ? "is-today" : ""} ${view === "month" && day.slice(0, 7) !== anchor.slice(0, 7) ? "outside-month" : ""}`}
                 >
                   <button
-                    className="calendar-day-number"
+                    className="calendar-day-create"
+                    disabled={busy || !writable.length}
                     aria-label={t("calendar.newOn", {
                       day: formatDay(day, { dateStyle: "full" }),
                     })}
                     onClick={() => newEvent(day)}
                   >
-                    {Number(day.slice(-2))}
-                    {view === "week" && (
-                      <small>{formatDay(day, { month: "short" })}</small>
-                    )}
+                    <span className="calendar-day-number">
+                      {Number(day.slice(-2))}
+                      {view === "week" && (
+                        <small>{formatDay(day, { month: "short" })}</small>
+                      )}
+                    </span>
                   </button>
                   <div className="calendar-day-events">
                     {dayEvents(day)
@@ -759,34 +803,28 @@ export default function CalendarPage({ settings, onBack }) {
           )}
         </section>
         {editor && (
-          <aside className="calendar-editor">
-            <header>
-              <h2>
-                {t(
-                  editor.mode === "event"
-                    ? editor.id
-                      ? "calendar.editEvent"
-                      : "calendar.newEvent"
-                    : editor.mode === "transfer"
-                      ? "calendar.importExport"
-                      : editor.mode === "oauth"
-                        ? "calendar.oauthTitle"
-                        : editor.mode === "calendar"
-                          ? "calendar.manageCalendar"
-                          : "calendar.addCalendar",
-                )}
-              </h2>
-              <button
-                className="icon-button"
-                aria-label={t("close")}
-                onClick={() => {
-                  setEditor(null);
-                  setConfirm(null);
-                }}
-              >
-                <X size={18} />
-              </button>
-            </header>
+          <CalendarEditorPanel
+            event={editor.mode === "event"}
+            onClose={closeEditor}
+            title={t(
+              editor.mode === "event"
+                ? editor.id
+                  ? "calendar.editEvent"
+                  : "calendar.newEvent"
+                : editor.mode === "transfer"
+                  ? "calendar.importExport"
+                  : editor.mode === "oauth"
+                    ? "calendar.oauthTitle"
+                    : editor.mode === "calendar"
+                      ? "calendar.manageCalendar"
+                      : "calendar.addCalendar",
+            )}
+          >
+            {error && editor.mode === "event" && (
+              <div className="notice error" role="alert">
+                {t(error)}
+              </div>
+            )}
             {editor.mode === "oauth" && (
               <CalendarOAuthSetup
                 key={editor.kind}
@@ -940,6 +978,14 @@ export default function CalendarPage({ settings, onBack }) {
                   <div className="calendar-form-actions">
                     <button className="primary" disabled={busy}>
                       {t("save")}
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary"
+                      disabled={busy}
+                      onClick={closeEditor}
+                    >
+                      {t("cancel")}
                     </button>
                     {editor.id && (
                       <button
@@ -1182,7 +1228,7 @@ export default function CalendarPage({ settings, onBack }) {
                 </button>
               </div>
             )}
-          </aside>
+          </CalendarEditorPanel>
         )}
       </div>
     </WorkspacePage>
