@@ -1,4 +1,4 @@
-# 📅 Kalender / Calendars — post. 1.2.2
+# 📅 Kalender / Calendars — post. 1.3.0
 
 ## Deutsch
 

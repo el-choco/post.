@@ -25,6 +25,8 @@ services:
       MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET:-}
       MICROSOFT_TENANT_ID: ${MICROSOFT_TENANT_ID:-common}
       ALLOW_PRIVATE_CALDAV: ${ALLOW_PRIVATE_CALDAV:-false}
+      FILES_MAX_UPLOAD_MB: ${FILES_MAX_UPLOAD_MB:-1024}
+      FILES_QUOTA_MB: ${FILES_QUOTA_MB:-5120}
     volumes:
       - ${WEBMAIL_DATA_DIR:-webmail_data}:/app/data
     networks:

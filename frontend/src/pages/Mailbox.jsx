@@ -47,6 +47,7 @@ import {
   LoaderCircle,
   ArrowLeft,
   CalendarDays,
+  HardDrive,
 } from "lucide-react";
 import { Panel, PanelGroup, PanelResizeHandle } from "../components/Panels";
 import { useStore } from "../store";
@@ -70,6 +71,7 @@ import MessageBody from "../components/MessageBody";
 import MessageAttachments from "../components/MessageAttachments";
 import WindowFrame from "../components/WindowFrame";
 const CalendarPage = lazy(() => import("../components/CalendarPage"));
+const FilesPage = lazy(() => import("../components/FilesPage"));
 const folderTypes = {
   "\\Inbox": ["inbox", Inbox],
   "\\Sent": ["sent", Send],
@@ -102,9 +104,13 @@ export default function Mailbox() {
   const { t } = useTranslation();
   const [viewParams, setViewParams] = useSearchParams();
   const view = viewParams.get("view") || "mail";
-  const section = ["contacts", "settings", "calendar"].includes(view)
+  const section = ["contacts", "settings", "calendar", "files"].includes(view)
     ? view
     : "mail";
+  const [filesVisited, setFilesVisited] = useState(section === "files");
+  useEffect(() => {
+    if (section === "files") setFilesVisited(true);
+  }, [section]);
   const routeUid = Number(viewParams.get("uid"));
   const routeFolder = viewParams.get("folder") || "INBOX";
   const [settings, setSettings] = useState(defaults);
@@ -1327,6 +1333,14 @@ export default function Mailbox() {
             <Settings size={18} />
             {t("settings")}
           </button>
+          <button
+            className={section === "files" ? "active" : ""}
+            aria-current={section === "files" ? "page" : undefined}
+            onClick={() => navigateSection("files")}
+          >
+            <HardDrive size={18} />
+            {t("files.title")}
+          </button>
         </nav>
         <div className="header-actions">
           <span className="account-email">{user.email}</span>
@@ -1740,6 +1754,19 @@ export default function Mailbox() {
           >
             <CalendarPage
               settings={settings}
+              onBack={() => navigateSection("mail")}
+            />
+          </Suspense>
+        </div>
+      )}
+      {(section === "files" || filesVisited) && (
+        <div className="workspace files-workspace" hidden={section !== "files"}>
+          <Suspense
+            fallback={<div className="empty-state">{t("loading")}</div>}
+          >
+            <FilesPage
+              settings={settings}
+              active={section === "files"}
               onBack={() => navigateSection("mail")}
             />
           </Suspense>

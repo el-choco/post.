@@ -1278,6 +1278,7 @@ app.post(
 /* ------------------------------ Contacts ------------------------------ */
 app.use("/api", require("./contacts").createContactsRouter(auth, wrap));
 app.use("/api/calendar", require("./calendar").createCalendarRouter(auth, wrap));
+app.use("/api/files", require("./files").createFilesRouter(auth, wrap));
 
 /* ------------------------------- Errors ------------------------------- */
 
@@ -1293,11 +1294,12 @@ app.use((err, req, res, next) => {
 
 if (require.main === module) {
   init()
-    .then(() =>
-      app.listen(PORT, process.env.HOST || "0.0.0.0", () =>
+    .then(() => {
+      setInterval(() => require("./filesStorage").cleanup().catch(() => {}), 15 * 60000).unref();
+      return app.listen(PORT, process.env.HOST || "0.0.0.0", () =>
         console.log(`Backend server running on port ${PORT}`),
-      ),
-    )
+      );
+    })
     .catch((e) => {
       console.error("Database initialisation failed", e);
       process.exit(1);

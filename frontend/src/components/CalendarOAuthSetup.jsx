@@ -10,6 +10,7 @@ export default function CalendarOAuthSetup({
   demo,
   onSaved,
   onBack,
+  purpose = "calendar",
 }) {
   const { t } = useTranslation();
   const [baseUrl, setBaseUrl] = useState(
@@ -23,9 +24,10 @@ export default function CalendarOAuthSetup({
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
+  const [access, setAccess] = useState(setup.access || "app");
   const validBase = oauthBaseUrl(provider, baseUrl);
   const sameOrigin = validBase === window.location.origin;
-  const callback = oauthCallbackUrl(provider, baseUrl);
+  const callback = oauthCallbackUrl(provider, baseUrl, purpose);
   const retainSecret = secretSaved && clientId.trim() === savedClient;
   async function submit(e) {
     e.preventDefault();
@@ -34,12 +36,16 @@ export default function CalendarOAuthSetup({
     setError("");
     setSaved(false);
     try {
-      const result = await post("/calendar/oauth/" + provider + "/config", {
-        baseUrl,
-        clientId,
-        clientSecret,
-        tenant,
-      });
+      const result = await post(
+        "/" + purpose + "/oauth/" + provider + "/config",
+        {
+          baseUrl,
+          clientId,
+          clientSecret,
+          tenant,
+          access,
+        },
+      );
       onSaved(result);
       setSavedClient(clientId.trim());
       setSecretSaved(true);
@@ -47,7 +53,7 @@ export default function CalendarOAuthSetup({
       setSaved(true);
       if (sameOrigin) {
         const authorization = await post(
-          "/calendar/oauth/" + provider + "/start",
+          "/" + purpose + "/oauth/" + provider + "/start",
           {},
         );
         window.location.assign(authorization.url);
@@ -67,9 +73,25 @@ export default function CalendarOAuthSetup({
         onClick={onBack}
       >
         <ArrowLeft size={16} />
-        {t("calendar.oauthBack")}
+        {t(purpose === "files" ? "files.oauthBack" : "calendar.oauthBack")}
       </button>
-      <p className="calendar-hint">{t("calendar.oauthFormHint")}</p>
+      <p className="calendar-hint">
+        {t(purpose === "files" ? "files.oauthHint" : "calendar.oauthFormHint")}
+      </p>
+      {purpose === "files" && provider === "google" && (
+        <label>
+          {t("files.access")}
+          <select value={access} onChange={(e) => setAccess(e.target.value)}>
+            <option value="app">{t("files.accessApp")}</option>
+            <option value="all">{t("files.accessAll")}</option>
+          </select>
+          <span className="calendar-hint">
+            {t(
+              access === "all" ? "files.accessAllHint" : "files.accessAppHint",
+            )}
+          </span>
+        </label>
+      )}
       <a
         href={
           provider === "google"
@@ -153,9 +175,13 @@ export default function CalendarOAuthSetup({
       )}
       {validBase && !sameOrigin && (
         <p className="calendar-oauth-notice">
-          {t("calendar.oauthOtherAddress")}
+          {t(
+            purpose === "files"
+              ? "files.oauthOtherAddress"
+              : "calendar.oauthOtherAddress",
+          )}
           <a
-            href={validBase + "/?view=calendar"}
+            href={validBase + "/?view=" + purpose}
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -177,7 +203,11 @@ export default function CalendarOAuthSetup({
           {t("calendar.saved")}
         </p>
       )}
-      {demo && <p className="calendar-hint">{t("calendar.errors.demo")}</p>}
+      {demo && (
+        <p className="calendar-hint">
+          {t(purpose === "files" ? "files.demoOAuth" : "calendar.errors.demo")}
+        </p>
+      )}
       <button className="primary" disabled={busy || !validBase || demo}>
         <Link size={16} />
         {t(

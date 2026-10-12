@@ -679,7 +679,7 @@ test("calendar mounts in the production app and uses the existing bearer session
   try {
     const url = "http://127.0.0.1:" + production.address().port;
     const health = await (await fetch(url + "/api/health")).json();
-    assert.equal(health.version, "1.2.1");
+    assert.equal(health.version, require("../package.json").version);
     const denied = await fetch(url + "/api/calendar/calendars");
     assert.equal(denied.status, 401);
     const list = await fetch(url + "/api/calendar/calendars", {

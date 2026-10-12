@@ -22,7 +22,14 @@ export function oauthBaseUrl(provider, value) {
     return "";
   }
 }
-export function oauthCallbackUrl(provider, value) {
+export function oauthCallbackUrl(provider, value, purpose = "calendar") {
   const base = oauthBaseUrl(provider, value);
-  return base ? base + "/api/calendar/oauth/" + provider + "/callback" : "";
+  return base
+    ? base +
+        "/api/" +
+        (purpose === "files" ? "files" : "calendar") +
+        "/oauth/" +
+        provider +
+        "/callback"
+    : "";
 }

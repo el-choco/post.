@@ -26,6 +26,7 @@
 | 🗂️ Archiv | Frei wählbarer Archivordner und verschiedene Ablagestrukturen |
 | 👥 Kontakte | Adressbücher, Gruppen, Kontaktbilder und erweiterte Kontaktinformationen |
 | 📅 Kalender | Persönliche SQLite-Kalender, CalDAV, Google/Microsoft-Anbindung, ICS, Monats-/Wochen-/Terminansicht; Tagesfeld anklicken und Termine im Popup erstellen/bearbeiten |
+| 📁 Dateien | Privater verschlüsselter Dateispeicher, Google Drive und OneDrive; Datei-/Ordner-Upload, Drag & Drop, Ordner, Downloads, Umbenennen, Verschieben, Papierkorb, Vorschau, Listen-/Kachelansicht |
 | 📥 Import | Google-/Outlook-CSV, einschließlich Kontakten ohne E-Mail-Adresse |
 | 📤 Export | Kontakte als CSV/vCard; Nachrichten als EML |
 | ⚙️ Einstellungen | Sprache, Darstellung, Identität, Signatur, Spezialordner und Benachrichtigungen |
@@ -33,6 +34,8 @@
 ### 🚀 Installation mit Docker Compose
 
 Die optionale Kalenderanbindung und OAuth-Einrichtung sind in [CALENDAR.md](CALENDAR.md) beschrieben. Client-ID und Client-Secret für Google/Microsoft können direkt über **Kalender → Kalender hinzufügen → Kalender verbinden** eingegeben werden. Google benötigt dafür eine HTTPS-Domain. Der persönliche Kalender funktioniert ohne zusätzliche Konfiguration.
+
+Der Bereich **Dateien** bietet sofort einen privaten Speicher auf deinem Server. Optional kannst du über **Dateien → Cloud hinzufügen** Google Drive oder OneDrive verbinden. Dafür die zusätzlichen Datei-Berechtigungen und Rücksprungadressen beim Anbieter einrichten; die Kalenderverbindung bleibt getrennt. Anleitung, Speichergrenzen und Proxy-Hinweise stehen in [FILES.md](FILES.md). Standard: 1 GB pro Datei und 5 GB privater Speicher pro Postfach. Lokale Dateiinhalte werden verschlüsselt im bestehenden Datenvolume gespeichert; Dateinamen und Metadaten liegen in SQLite.
 
 **Voraussetzungen:**
 
@@ -335,6 +338,7 @@ Die Demo verbindet sich mit keinem Mailserver und versendet keine Nachrichten.
 | 🗂️ Archive | Configurable archive folder and filing structures |
 | 👥 Contacts | Address books, groups, contact pictures and detailed profiles |
 | 📅 Calendars | Personal SQLite calendars, CalDAV, Google/Microsoft connections, ICS, month/week/agenda views; click a day cell to create or edit events in a popup |
+| 📁 Files | Encrypted private storage, Google Drive and OneDrive; file/folder uploads, drag and drop, folders, downloads, rename, move, trash, previews and list/grid views |
 | 📥 Import | Google/Outlook CSV, including contacts without email addresses |
 | 📤 Export | Contacts as CSV/vCard; messages as EML |
 | ⚙️ Settings | Language, appearance, identity, signature, special folders and notifications |
@@ -342,6 +346,8 @@ Die Demo verbindet sich mit keinem Mailserver und versendet keine Nachrichten.
 ### 🚀 Installation with Docker Compose
 
 Optional calendar connections and OAuth setup are described in [CALENDAR.md](CALENDAR.md). Enter Google/Microsoft client credentials directly through **Calendar → Add calendar → Connect calendar**. Google requires an HTTPS domain. The personal calendar works without additional configuration.
+
+**Files** provides private storage on your server immediately. Optionally connect Google Drive or OneDrive through **Files → Add cloud storage**. Register the additional file permissions and callback URLs; calendar connections remain separate. See [FILES.md](FILES.md) for setup, limits and reverse-proxy settings. Defaults: 1 GB per file and 5 GB private storage per mailbox. Local file contents are encrypted in the existing data volume; filenames and metadata are stored in SQLite.
 
 **Requirements:**
 
