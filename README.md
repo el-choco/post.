@@ -27,9 +27,21 @@
 | 👥 Kontakte | Adressbücher, Gruppen, Kontaktbilder und erweiterte Kontaktinformationen |
 | 📅 Kalender | Persönliche SQLite-Kalender, CalDAV, Google/Microsoft-Anbindung, ICS, Monats-/Wochen-/Terminansicht; Tagesfeld anklicken und Termine im Popup erstellen/bearbeiten |
 | 📁 Dateien | Privater verschlüsselter Dateispeicher, Google Drive und OneDrive; Datei-/Ordner-Upload, Drag & Drop, Ordner, Downloads, Umbenennen, Verschieben, Papierkorb, Vorschau, Listen-/Kachelansicht |
+| 📝 Dokumente | Optional: ONLYOFFICE-Vorschau und Bearbeitung für PDF, DOCX, XLSX und PPTX; Zurückspeichern in privaten Speicher, Google Drive oder OneDrive |
 | 📥 Import | Google-/Outlook-CSV, einschließlich Kontakten ohne E-Mail-Adresse |
 | 📤 Export | Kontakte als CSV/vCard; Nachrichten als EML |
 | ⚙️ Einstellungen | Sprache, Darstellung, Identität, Signatur, Spezialordner und Benachrichtigungen |
+
+### 🧭 Welche Variante passt zu deinem Server?
+
+| Variante | Stack-Datei | Enthalten |
+|---|---|---|
+| 📬 Webmail ohne ONLYOFFICE | [docker-compose.yml](docker-compose.yml) | E-Mail, Kontakte, Kalender und Dateien; eigene Bild-/Textvorschau, Office-Dateien herunterladen |
+| 📝 Webmail mit ONLYOFFICE | [docker-compose.onlyoffice.yml](docker-compose.onlyoffice.yml) | Alles aus der Standardvariante plus Dokumentvorschau und Bearbeitung mit zusätzlichem ONLYOFFICE-Container |
+
+**Eine der beiden vollständigen Stack-Dateien verwenden.** Die ONLYOFFICE-Datei enthält bereits Frontend und Backend; dafür keinen zweiten Webmail-Stack anlegen und die Dateien nicht zusammenführen.
+
+Bei wenig freiem RAM die Standardvariante wählen. ONLYOFFICE nennt **mindestens 4 GB RAM** für seine Docker-Installation; Betriebssystem, Webmail und weitere Dienste benötigen zusätzlich Speicher. Für einen gemeinsamen Server sind **8 GB oder mehr eine praktische Empfehlung**, abhängig von Dokumentgröße und gleichzeitiger Nutzung. Die Standardvariante benötigt keinen Dokumentserver und kann später erweitert werden. [ONLYOFFICE-Systemanforderungen](https://helpcenter.onlyoffice.com/docs/installation/docs-community-install-docker.aspx).
 
 ### 🚀 Installation mit Docker Compose
 
@@ -75,25 +87,96 @@ Für eine Docker-Standalone-Umgebung:
 
 Danach die Webmail unter `http://SERVER-IP:8886` öffnen.
 
-### ⚙️ Optionale Konfiguration
+### 📝 Installation mit ONLYOFFICE
 
-Für Docker Compose eine `.env` neben der Compose-Datei erstellen:
+Die Webmail-Images müssen die ONLYOFFICE-Einbindung enthalten (**ab v1.4.0**). Für eine neue Installation die vollständige [docker-compose.onlyoffice.yml](docker-compose.onlyoffice.yml) verwenden. Eine vorhandene Installation im **gleichen Projekt bzw. bestehenden Portainer-Stack** erweitern und das vorhandene Datenvolume beibehalten.
+
+1. Auf dem Server mit `openssl rand -hex 32` einen zufälligen Schlüssel erzeugen.
+2. Eine eigene Office-Subdomain anlegen, z. B. `office.example.com`. Im Nginx Proxy Manager auf **HTTP → Docker-Server-IP → Port 8888** weiterleiten, **Websockets Support** aktivieren und ein gültiges SSL-Zertifikat mit **Force SSL** einrichten. Bei anderem `ONLYOFFICE_PORT` den Proxy-Port entsprechend ändern. Die Webmail behält ihre eigene Adresse und ihren bisherigen Port.
+3. Die folgenden Variablen in der `.env` bzw. unter **Environment variables** des Portainer-Stacks setzen:
 
 ```dotenv
+WEBMAIL_VERSION=1.4.0
 WEBMAIL_PORT=8886
-
-# Optional: eigener Datenordner auf dem Docker-Host
-# WEBMAIL_DATA_DIR=/pfad/zu/webmail/data
+ONLYOFFICE_URL=https://office.example.com
+ONLYOFFICE_JWT_SECRET=HIER_DEN_ERZEUGTEN_SCHLUESSEL_EINTRAGEN
+ONLYOFFICE_PORT=8888
+ONLYOFFICE_VERSION=9.4.0.1
+ONLYOFFICE_MAX_FILE_MB=50
 ```
+
+Domain und Schlüssel ersetzen; eigene Ports und die gewünschte verfügbare Webmail-Version beibehalten. `latest` ist ebenfalls möglich. Der Office-Port muss frei sein. Den Schlüssel nicht veröffentlichen.
+
+**Docker Compose:** Aus dem bisherigen Projektverzeichnis starten:
+
+```bash
+docker compose -f docker-compose.onlyoffice.yml up -d
+```
+
+**Portainer:** Im bestehenden Stack unter **Editor** die vollständige `docker-compose.onlyoffice.yml` einsetzen, vorhandene Daten-/Port-/OAuth-Einstellungen behalten und **Update the stack → Re-pull image and redeploy** wählen. Bei einer Neuinstallation diese Datei bereits beim Anlegen des Stacks verwenden.
+
+Die optionale Stack-Datei setzt automatisch `ONLYOFFICE_ENABLED=true`, `ONLYOFFICE_INTERNAL_URL=http://onlyoffice` und `ONLYOFFICE_CALLBACK_BASE_URL=http://backend:3000`. Diese drei Werte müssen dafür nicht in der `.env` eingetragen werden. Nur `ONLYOFFICE_ENABLED=true` in der normalen Datei startet noch keinen Dokumentserver.
+
+Nach dem ersten Start einige Minuten warten, die Webmail mit **STRG + F5** neu laden und unter **Dateien** eine PDF-, DOCX-, XLSX- oder PPTX-Datei öffnen. **Bearbeiten** wählen, eine kleine Änderung speichern, die Vorschau schließen und die Datei erneut öffnen. Änderungen werden in dieselbe Datei im privaten Speicher, Google Drive oder OneDrive zurückgeschrieben. Native Google-Dokumente weiterhin beim Anbieter bearbeiten; Bilder und Text behalten ihre eigene Vorschau.
+
+ONLYOFFICE verarbeitet die Dokumente entschlüsselt und kann sie in seinen eigenen Cache-Volumes halten. Auch diese Volumes und Backups schützen. Einrichtung, Speichergrenzen und Wiederherstellung erklärt [ONLYOFFICE.md](ONLYOFFICE.md).
+
+**Zur Standardvariante zurückkehren:** Laufende Bearbeitungen erst speichern und schließen. `ONLYOFFICE_ENABLED=false` setzen und im selben Stack wieder die vollständige normale Compose-Datei verwenden. In Portainer beim Update den entfernten ONLYOFFICE-Dienst ebenfalls entfernen lassen. Bei Docker Compose:
+
+```bash
+docker compose -f docker-compose.onlyoffice.yml stop onlyoffice
+docker compose -f docker-compose.yml up -d --remove-orphans
+```
+
+Damit läuft kein zusätzlicher Dokumentserver mehr. Die benannten Datenvolumes bleiben erhalten; `--remove-orphans` entfernt im gleichen Compose-Projekt die Container von Diensten, die nicht mehr in der gewählten Datei stehen.
+
+### ⚙️ Alle Variablen der `.env`
+
+Für Docker Compose die [`.env.example`](.env.example) als `.env` neben der gewählten Compose-Datei speichern und anpassen. In **Portainer** dieselben Werte unter den **Environment variables des Stacks** eintragen. Nicht jede Variable muss befüllt werden; die Standardvariante funktioniert ohne OAuth-/Office-Zugangsdaten. Die `.env` mit echten Schlüsseln und Secrets nicht veröffentlichen.
+
+#### Webmail und privater Dateispeicher
 
 | Variable | Bedeutung | Standard |
 |---|---|---|
-| `WEBMAIL_PORT` | Port der Weboberfläche | `8886` |
-| `WEBMAIL_DATA_DIR` | Optionaler Datenordner auf dem Docker-Host | Persistentes Docker-Volume |
+| `DOCKERHUB_NAMESPACE` | Namensraum der bereitgestellten Webmail-Images; normalerweise beibehalten | `paquele` |
+| `WEBMAIL_VERSION` | Image-Version für Frontend und Backend; z. B. `1.4.0` oder `latest` | `latest` |
+| `WEBMAIL_PORT` | Freier Port auf dem Docker-Host für die Webmail | `8886` |
+| `WEBMAIL_DATA_DIR` | Optionaler Host-Datenordner statt des benannten Volumes; enthält Datenbank, Schlüssel und lokale Dateien | Docker-Volume `webmail_data` |
+| `FILES_MAX_UPLOAD_MB` | Maximale Größe einer einzelnen hochgeladenen Datei in MiB; unabhängig vom Office-Limit | `1024` (1 GiB) |
+| `FILES_QUOTA_MB` | Private Speicherquote pro Postfach in MiB; Papierkorb und verschlüsselte Cloud-/Office-Arbeitskopien zählen mit | `5120` (5 GiB) |
 
-In Portainer diese Werte unter den Umgebungsvariablen des Stacks eintragen.
+Ein eigener Host-Datenordner muss für den Backend-Benutzer mit UID **1000** schreibbar sein. Bei einem Update dieselbe Datenablage und denselben Compose-Projektnamen beibehalten. Größen als positive ganze Zahlen angeben; **1024 MiB = 1 GiB**. Für temporäre Arbeitskopien Platz innerhalb der Quote lassen.
 
-Ein eigener Datenordner muss für den Backend-Benutzer mit UID **1000** schreibbar sein.
+#### Kalender und Cloud-Verbindungen: optionale Servervorgaben
+
+**Du kannst die OAuth-Daten direkt beim Verbinden in der Webmail eingeben. Dann dürfen die folgenden Servervorgaben leer bleiben bzw. fehlen.** Die über die Oberfläche gespeicherten Einstellungen gelten pro Postfach und haben Vorrang vor den Servervorgaben. Eine Dateiverbindung ohne eigene OAuth-Konfiguration kann die Kalenderkonfiguration desselben Anbieters übernehmen; die Berechtigungen und Anmeldungen für Kalender und Dateien bleiben getrennt.
+
+| Variable | Bedeutung | Standard |
+|---|---|---|
+| `PUBLIC_BASE_URL` | Öffentliche HTTPS-Adresse der **Webmail**, z. B. `https://post.example.com`, ohne Unterpfad; Grundlage der OAuth-Rücksprungadressen, wenn Servervorgaben verwendet werden | leer |
+| `GOOGLE_CLIENT_ID` | Optionale Google-OAuth-Client-ID als Vorgabe für Kalender/Drive | leer |
+| `GOOGLE_CLIENT_SECRET` | Zugehöriges Google-Client-Secret; kein Mail-/App-Passwort | leer |
+| `MICROSOFT_CLIENT_ID` | Optionale Microsoft-OAuth-Anwendungs-ID als Vorgabe für Kalender/OneDrive | leer |
+| `MICROSOFT_CLIENT_SECRET` | Zugehöriger Microsoft-Client-Secret-Wert | leer |
+| `MICROSOFT_TENANT_ID` | Microsoft-Verzeichnis bzw. Mandant für die Servervorgabe; eine konkrete Tenant-ID ist ebenfalls möglich | `common` |
+| `ALLOW_PRIVATE_CALDAV` | `true` erlaubt zusätzlich CalDAV-Verbindungen zu privaten/internen Serveradressen; nur bei Bedarf aktivieren | `false` |
+
+Wenn du Servervorgaben nutzt, für den jeweiligen Anbieter auch `PUBLIC_BASE_URL` und beide Client-Zugangsdaten setzen. Bei Einrichtung über die Oberfläche dort die Webmail-Adresse und Zugangsdaten angeben. OAuth-Daten werden verschlüsselt in SQLite gespeichert. Lokale Kalender und privater Dateispeicher brauchen keine OAuth-App. Anbieter-Konfiguration, Berechtigungen und genaue Callback-Adressen stehen in [CALENDAR.md](CALENDAR.md) und [FILES.md](FILES.md).
+
+#### ONLYOFFICE
+
+| Variable | Bedeutung | Standard / Verhalten |
+|---|---|---|
+| `ONLYOFFICE_ENABLED` | Aktiviert die Office-Einbindung im Backend; startet selbst keinen Container | `false` in der normalen Datei; in der optionalen Datei fest `true` |
+| `ONLYOFFICE_URL` | Öffentliche HTTPS-Adresse des Dokumentservers, z. B. `https://office.example.com`; vom Browser erreichbar, ohne Unterpfad | leer; für ONLYOFFICE erforderlich |
+| `ONLYOFFICE_INTERNAL_URL` | Adresse, unter der unser Backend den Dokumentserver intern erreicht | normale Datei: Office-URL als Fallback; optionale Datei: fest `http://onlyoffice` |
+| `ONLYOFFICE_CALLBACK_BASE_URL` | Adresse unseres **Webmail-Backends**, unter der ONLYOFFICE Dokumente abruft und Speicher-Callbacks sendet; nicht die Office-Subdomain | normale Datei: `PUBLIC_BASE_URL` als Fallback; optionale Datei: fest `http://backend:3000` |
+| `ONLYOFFICE_JWT_SECRET` | Gemeinsamer zufälliger Schlüssel für Webmail-Backend und ONLYOFFICE, mindestens 32 Zeichen; `openssl rand -hex 32` erzeugt ihn | leer; für ONLYOFFICE erforderlich |
+| `ONLYOFFICE_MAX_FILE_MB` | Maximale Dokumentgröße für Vorschau/Bearbeitung in MiB, ganze Zahl von `1` bis `100`; normale Uploads können größer sein | `50` |
+| `ONLYOFFICE_VERSION` | Version des separaten ONLYOFFICE-Images, unabhängig von `WEBMAIL_VERSION`; nur die optionale Datei verwendet sie | `9.4.0.1` |
+| `ONLYOFFICE_PORT` | Freier Host-Port des Dokumentservers; Zielport im Nginx Proxy Manager | `8888`; nur die optionale Datei verwendet ihn |
+
+Die optionale Datei überschreibt die drei Werte **ENABLED**, **INTERNAL_URL** und **CALLBACK_BASE_URL** fest. Die entsprechenden Einträge in `.env` werden dabei nicht verwendet. Ein vorhandener externer Dokumentserver kann stattdessen mit der normalen Datei und passenden Office-Variablen eingebunden werden.
 
 ### 🔐 Anmeldung
 
@@ -338,10 +421,22 @@ Die Demo verbindet sich mit keinem Mailserver und versendet keine Nachrichten.
 | 🗂️ Archive | Configurable archive folder and filing structures |
 | 👥 Contacts | Address books, groups, contact pictures and detailed profiles |
 | 📅 Calendars | Personal SQLite calendars, CalDAV, Google/Microsoft connections, ICS, month/week/agenda views; click a day cell to create or edit events in a popup |
-| 📁 Files | Encrypted private storage, Google Drive and OneDrive; file/folder uploads, drag and drop, folders, downloads, rename, move, trash, previews and list/grid views |
+| 📁 Files | Encrypted private storage, Google Drive and OneDrive; file/folder uploads, drag and drop, folders, downloads, rename, move, trash, previews and list/grid views; compact toolbar in the page header |
+| 📝 Documents | Optional ONLYOFFICE viewing/editing for PDF, DOCX, XLSX and PPTX; save back to private storage, Google Drive or OneDrive |
 | 📥 Import | Google/Outlook CSV, including contacts without email addresses |
 | 📤 Export | Contacts as CSV/vCard; messages as EML |
 | ⚙️ Settings | Language, appearance, identity, signature, special folders and notifications |
+
+### 🧭 Choose your installation
+
+| Variant | Stack file | Includes |
+|---|---|---|
+| 📬 Webmail without ONLYOFFICE | [docker-compose.yml](docker-compose.yml) | Mail, contacts, calendars and files; built-in image/text previews, Office file downloads |
+| 📝 Webmail with ONLYOFFICE | [docker-compose.onlyoffice.yml](docker-compose.onlyoffice.yml) | All standard features plus document previews and editing through an additional ONLYOFFICE container |
+
+**Choose one complete stack file.** The ONLYOFFICE file already includes frontend and backend; do not create a second webmail stack or combine the two files.
+
+Choose the standard variant when available RAM is limited. ONLYOFFICE lists **at least 4 GB RAM** for its Docker installation; the operating system, webmail and other services need additional memory. **8 GB or more is a practical recommendation** for a shared server, depending on document size and concurrent use. The standard variant needs no document server and can be extended later. [ONLYOFFICE system requirements](https://helpcenter.onlyoffice.com/docs/installation/docs-community-install-docker.aspx).
 
 ### 🚀 Installation with Docker Compose
 
@@ -387,25 +482,96 @@ For a Docker Standalone environment:
 
 Then open the webmail at `http://SERVER-IP:8886`.
 
-### ⚙️ Optional configuration
+### 📝 Install with ONLYOFFICE
 
-For Docker Compose, create a `.env` file next to the Compose file:
+Use webmail images containing the ONLYOFFICE integration (**v1.4.0 or later**). For a new installation, use the complete [docker-compose.onlyoffice.yml](docker-compose.onlyoffice.yml). Extend an existing installation in the **same Compose project or existing Portainer stack**, keeping its data volume.
+
+1. Generate a random key on the server with `openssl rand -hex 32`.
+2. Create a separate Office subdomain such as `office.example.com`. In Nginx Proxy Manager, forward to **HTTP → Docker server IP → port 8888**, enable **Websockets Support**, and configure a valid SSL certificate with **Force SSL**. If you change `ONLYOFFICE_PORT`, change the proxy target port too. Webmail keeps its own address and existing port.
+3. Set these values in `.env` or the Portainer stack's **Environment variables**:
 
 ```dotenv
+WEBMAIL_VERSION=1.4.0
 WEBMAIL_PORT=8886
-
-# Optional: custom data directory on the Docker host
-# WEBMAIL_DATA_DIR=/path/to/webmail/data
+ONLYOFFICE_URL=https://office.example.com
+ONLYOFFICE_JWT_SECRET=REPLACE_WITH_YOUR_GENERATED_KEY
+ONLYOFFICE_PORT=8888
+ONLYOFFICE_VERSION=9.4.0.1
+ONLYOFFICE_MAX_FILE_MB=50
 ```
+
+Replace the domain and key; retain your chosen ports and available webmail version. You can also use `latest`. The Office port must be available. Keep the key private.
+
+**Docker Compose:** Run from your existing project directory:
+
+```bash
+docker compose -f docker-compose.onlyoffice.yml up -d
+```
+
+**Portainer:** In the existing stack's **Editor**, paste the complete `docker-compose.onlyoffice.yml`, retain the existing data/port/OAuth settings, and select **Update the stack → Re-pull image and redeploy**. For a new installation, use this file when creating the stack.
+
+The optional stack automatically sets `ONLYOFFICE_ENABLED=true`, `ONLYOFFICE_INTERNAL_URL=http://onlyoffice` and `ONLYOFFICE_CALLBACK_BASE_URL=http://backend:3000`. These three values do not need `.env` entries for this stack. Setting only `ONLYOFFICE_ENABLED=true` with the normal file does not start a document server.
+
+Allow a few minutes for initial startup, reload webmail with **CTRL + F5**, and open a PDF, DOCX, XLSX or PPTX under **Files**. Choose **Edit**, save a small change, close the preview and reopen the file. Changes are saved to the same file in private storage, Google Drive or OneDrive. Continue editing native Google documents at the provider; images and text keep their existing previews.
+
+ONLYOFFICE processes decrypted documents and may retain them in its own cache volumes. Protect these volumes and backups too. See [ONLYOFFICE.md](ONLYOFFICE.md) for detailed setup, limits and recovery.
+
+**Return to the standard variant:** Save and close active editing sessions first. Set `ONLYOFFICE_ENABLED=false` and replace the stack with the complete normal Compose file in the same project. In Portainer, also remove the deleted ONLYOFFICE service during the update. With Docker Compose:
+
+```bash
+docker compose -f docker-compose.onlyoffice.yml stop onlyoffice
+docker compose -f docker-compose.yml up -d --remove-orphans
+```
+
+The additional document server no longer runs. Named data volumes are retained; `--remove-orphans` removes containers in the same Compose project whose services are absent from the selected file.
+
+### ⚙️ Every `.env` variable explained
+
+For Docker Compose, save [`.env.example`](.env.example) as `.env` next to the chosen Compose file and adjust it. In **Portainer**, enter the same values in the **stack's Environment variables**. Not every variable needs a value; the standard variant works without OAuth or Office credentials. Do not publish `.env` files containing real keys or secrets.
+
+#### Webmail and private file storage
 
 | Variable | Purpose | Default |
 |---|---|---|
-| `WEBMAIL_PORT` | Web interface port | `8886` |
-| `WEBMAIL_DATA_DIR` | Optional data directory on the Docker host | Persistent Docker volume |
+| `DOCKERHUB_NAMESPACE` | Namespace of the provided webmail images; normally leave unchanged | `paquele` |
+| `WEBMAIL_VERSION` | Image version for frontend and backend, such as `1.4.0` or `latest` | `latest` |
+| `WEBMAIL_PORT` | Available Docker host port for webmail | `8886` |
+| `WEBMAIL_DATA_DIR` | Optional host data directory instead of the named volume; holds the database, key and local files | Docker volume `webmail_data` |
+| `FILES_MAX_UPLOAD_MB` | Maximum size of one uploaded file in MiB; independent of the Office limit | `1024` (1 GiB) |
+| `FILES_QUOTA_MB` | Private storage quota per mailbox in MiB; includes trash and encrypted cloud/Office working copies | `5120` (5 GiB) |
 
-In Portainer, enter these values in the stack’s environment variables.
+A custom host directory must be writable by the backend user with UID **1000**. Keep the same data location and Compose project name when updating. Set sizes as positive integers; **1024 MiB = 1 GiB**. Leave space within the quota for temporary working copies.
 
-A custom data directory must be writable by the backend user with UID **1000**.
+#### Calendars and cloud connections: optional server defaults
+
+**You can enter OAuth credentials directly when connecting in webmail. These server defaults may then remain blank or be omitted.** Settings saved through the interface apply per mailbox and take precedence over server defaults. A file connection without its own OAuth configuration can fall back to the same provider's calendar configuration; calendar/file permissions and authorization remain separate.
+
+| Variable | Purpose | Default |
+|---|---|---|
+| `PUBLIC_BASE_URL` | Public HTTPS **webmail** address, such as `https://post.example.com`, with no subpath; basis for OAuth callbacks when using server defaults | blank |
+| `GOOGLE_CLIENT_ID` | Optional Google OAuth client ID as a calendar/Drive default | blank |
+| `GOOGLE_CLIENT_SECRET` | Matching Google client secret; not a mail/app password | blank |
+| `MICROSOFT_CLIENT_ID` | Optional Microsoft OAuth application ID as a calendar/OneDrive default | blank |
+| `MICROSOFT_CLIENT_SECRET` | Matching Microsoft client secret value | blank |
+| `MICROSOFT_TENANT_ID` | Microsoft directory/tenant for the server default; a specific tenant ID can also be used | `common` |
+| `ALLOW_PRIVATE_CALDAV` | `true` additionally allows CalDAV connections to private/internal server addresses; enable only if needed | `false` |
+
+When using server defaults, set `PUBLIC_BASE_URL` and both client credentials for the provider. When configuring through the interface, enter the webmail address and credentials there. OAuth credentials are stored encrypted in SQLite. Local calendars and private file storage need no OAuth application. Provider setup, permissions and exact callback addresses are documented in [CALENDAR.md](CALENDAR.md) and [FILES.md](FILES.md).
+
+#### ONLYOFFICE
+
+| Variable | Purpose | Default / behavior |
+|---|---|---|
+| `ONLYOFFICE_ENABLED` | Enables Office integration in the backend; does not start a container by itself | `false` in the normal file; fixed `true` in the optional file |
+| `ONLYOFFICE_URL` | Public HTTPS document server address, such as `https://office.example.com`; browser-accessible, with no subpath | blank; required for ONLYOFFICE |
+| `ONLYOFFICE_INTERNAL_URL` | Address used by our backend to reach the document server internally | normal file: falls back to the Office URL; optional file: fixed `http://onlyoffice` |
+| `ONLYOFFICE_CALLBACK_BASE_URL` | Our **webmail backend** address where ONLYOFFICE fetches documents and sends save callbacks; not the Office subdomain | normal file: falls back to `PUBLIC_BASE_URL`; optional file: fixed `http://backend:3000` |
+| `ONLYOFFICE_JWT_SECRET` | Shared random key for the webmail backend and ONLYOFFICE, at least 32 characters; generate with `openssl rand -hex 32` | blank; required for ONLYOFFICE |
+| `ONLYOFFICE_MAX_FILE_MB` | Maximum document size for viewing/editing in MiB; integer from `1` to `100`; ordinary uploads may be larger | `50` |
+| `ONLYOFFICE_VERSION` | Version of the separate ONLYOFFICE image, independent of `WEBMAIL_VERSION`; used only by the optional file | `9.4.0.1` |
+| `ONLYOFFICE_PORT` | Available document server host port; target port in Nginx Proxy Manager | `8888`; used only by the optional file |
+
+The optional file fixes **ENABLED**, **INTERNAL_URL** and **CALLBACK_BASE_URL**, overriding any `.env` entries for those three settings. An existing external document server can instead be connected through the normal file with appropriate Office variables.
 
 ### 🔐 Sign-in
 
@@ -631,3 +797,4 @@ The demo does not connect to a mailserver or send messages.
 ---
 
 📬 **post. — a calmer inbox.**
+

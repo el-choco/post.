@@ -1,0 +1,81 @@
+# Complete optional stack for Portainer or docker compose -f docker-compose.onlyoffice.yml up -d.
+services:
+  frontend:
+    image: ${DOCKERHUB_NAMESPACE:-paquele}/post-webmail-frontend:${WEBMAIL_VERSION:-latest}
+    ports:
+      - "${WEBMAIL_PORT:-8886}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+  backend:
+    image: ${DOCKERHUB_NAMESPACE:-paquele}/post-webmail-backend:${WEBMAIL_VERSION:-latest}
+    init: true
+    environment:
+      NODE_ENV: production
+      DATA_DIR: /app/data
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID:-}
+      MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET:-}
+      MICROSOFT_TENANT_ID: ${MICROSOFT_TENANT_ID:-common}
+      ALLOW_PRIVATE_CALDAV: ${ALLOW_PRIVATE_CALDAV:-false}
+      FILES_MAX_UPLOAD_MB: ${FILES_MAX_UPLOAD_MB:-1024}
+      FILES_QUOTA_MB: ${FILES_QUOTA_MB:-5120}
+      ONLYOFFICE_ENABLED: "true"
+      ONLYOFFICE_URL: ${ONLYOFFICE_URL:-}
+      ONLYOFFICE_INTERNAL_URL: http://onlyoffice
+      ONLYOFFICE_CALLBACK_BASE_URL: http://backend:3000
+      ONLYOFFICE_JWT_SECRET: ${ONLYOFFICE_JWT_SECRET:?Set a random secret with at least 32 characters}
+      ONLYOFFICE_MAX_FILE_MB: ${ONLYOFFICE_MAX_FILE_MB:-50}
+    volumes:
+      - ${WEBMAIL_DATA_DIR:-webmail_data}:/app/data
+    networks:
+      default:
+        aliases:
+          - backend
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+  onlyoffice:
+    image: onlyoffice/documentserver:${ONLYOFFICE_VERSION:-9.4.0.1}
+    restart: unless-stopped
+    environment:
+      JWT_ENABLED: "true"
+      JWT_SECRET: ${ONLYOFFICE_JWT_SECRET:?Set a random secret with at least 32 characters}
+      JWT_HEADER: Authorization
+      ALLOW_PRIVATE_IP_ADDRESS: "true"
+      ALLOW_META_IP_ADDRESS: "false"
+    ports:
+      - "${ONLYOFFICE_PORT:-8888}:80"
+    volumes:
+      - onlyoffice_data:/var/www/onlyoffice/Data
+      - onlyoffice_lib:/var/lib/onlyoffice
+      - onlyoffice_logs:/var/log/onlyoffice
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1/healthcheck"]
+      interval: 30s
+      timeout: 10s
+      start_period: 120s
+      retries: 5
+volumes:
+  onlyoffice_data:
+  onlyoffice_lib:
+  onlyoffice_logs:
+  webmail_data:

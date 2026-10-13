@@ -1279,6 +1279,7 @@ app.post(
 app.use("/api", require("./contacts").createContactsRouter(auth, wrap));
 app.use("/api/calendar", require("./calendar").createCalendarRouter(auth, wrap));
 app.use("/api/files", require("./files").createFilesRouter(auth, wrap));
+app.use("/api/office", require("./office").createOfficeRouter(auth, wrap));
 
 /* ------------------------------- Errors ------------------------------- */
 
@@ -1296,6 +1297,7 @@ if (require.main === module) {
   init()
     .then(() => {
       setInterval(() => require("./filesStorage").cleanup().catch(() => {}), 15 * 60000).unref();
+      setInterval(() => require("./office").cleanup().catch(() => {}), 15 * 60000).unref();
       return app.listen(PORT, process.env.HOST || "0.0.0.0", () =>
         console.log(`Backend server running on port ${PORT}`),
       );

@@ -8,6 +8,8 @@ import calendarDe from "./locales/calendar.de.json";
 import calendarEn from "./locales/calendar.en.json";
 import filesDe from "./locales/files.de.json";
 import filesEn from "./locales/files.en.json";
+import officeDe from "./locales/office.de.json";
+import officeEn from "./locales/office.en.json";
 i18n.use(initReactI18next).init({
   resources: {
     de: {
@@ -16,6 +18,7 @@ i18n.use(initReactI18next).init({
         ...featuresDe,
         calendar: calendarDe,
         files: filesDe,
+        office: officeDe,
       },
     },
     en: {
@@ -24,6 +27,7 @@ i18n.use(initReactI18next).init({
         ...featuresEn,
         calendar: calendarEn,
         files: filesEn,
+        office: officeEn,
       },
     },
   },

@@ -31,6 +31,8 @@ import {
 import WorkspacePage from "./WorkspacePage";
 import Dialog from "./Dialog";
 import CalendarOAuthSetup from "./CalendarOAuthSetup";
+import OfficePreview from "./OfficePreview";
+import { officeFile } from "../lib/office";
 import { useStore } from "../store";
 import { api, post } from "../api";
 import {
@@ -96,6 +98,8 @@ export default function FilesPage({ settings, onBack, active = true }) {
     [pickerCrumbs, setPickerCrumbs] = useState([]),
     [pickerLoading, setPickerLoading] = useState(false);
   const [preview, setPreview] = useState(null);
+  const [officePreview, setOfficePreview] = useState(null);
+  const [recoveries, setRecoveries] = useState([]);
   const anchor = useRef(null),
     fileInput = useRef(null),
     folderInput = useRef(null),
@@ -143,6 +147,36 @@ export default function FilesPage({ settings, onBack, active = true }) {
           (params.get("filesError") === "denied" ? "denied" : "connect"),
       );
   }, [readSources, user.demo]);
+  useEffect(() => {
+    if (!active || user.demo) return;
+    let stopped = false;
+    api("/office/recoveries")
+      .then((result) => {
+        if (!stopped) setRecoveries(result.items);
+      })
+      .catch(() => {});
+    return () => {
+      stopped = true;
+    };
+  }, [active, user.demo, refresh, officePreview]);
+  async function keepRecovery(id) {
+    setWorking(true);
+    try {
+      const saved = await post("/office/sessions/" + id + "/keep", {
+        language: settings.language,
+      });
+      setRecoveries((rows) => rows.filter((r) => r.id !== id));
+      setNotice("office.recoveryKept");
+      setSourceId("local");
+      setTrash(false);
+      setParent(saved.folderId);
+      setRefresh((v) => v + 1);
+    } catch (e) {
+      showError(e);
+    } finally {
+      setWorking(false);
+    }
+  }
   useEffect(() => {
     const timer = setTimeout(() => setSearch(query), 250);
     return () => clearTimeout(timer);
@@ -363,7 +397,7 @@ export default function FilesPage({ settings, onBack, active = true }) {
       cancelled = true;
     };
   }, [modal?.mode, pickerParent, path, user.demo]);
-  async function download(item) {
+  async function download(item, bubble = false) {
     try {
       if (user.demo) {
         const blob = demoFiles.blobs.get(item.id);
@@ -383,6 +417,7 @@ export default function FilesPage({ settings, onBack, active = true }) {
       link.click();
       link.remove();
     } catch (e) {
+      if (bubble) throw e;
       showError(e);
     }
   }
@@ -393,6 +428,11 @@ export default function FilesPage({ settings, onBack, active = true }) {
     }
     setSelected(new Set([item.id]));
     const requestId = ++previewSequence.current;
+    if (!trash && officeFile(item)) {
+      setPreview(null);
+      setOfficePreview({ item, source: sourceId });
+      return;
+    }
     const image = /^image\/(png|jpeg|gif|webp|avif|bmp)$/.test(item.mime || ""),
       text =
         /^(text\/|application\/(json|xml))/.test(item.mime || "") ||
@@ -584,15 +624,130 @@ export default function FilesPage({ settings, onBack, active = true }) {
   );
   return (
     <WorkspacePage
+      className="files-page"
       title={t("files.title")}
       onBack={onBack}
       headerActions={
-        <span className="files-header-note">
-          <Lock size={15} />
-          {t("files.headerHint")}
-        </span>
+        <div className="files-toolbar">
+          {!trash && (
+            <>
+              <button
+                className="primary"
+                disabled={busy}
+                onClick={() => fileInput.current.click()}
+              >
+                <Upload size={17} />
+                {t("files.upload")}
+              </button>
+              <button
+                className="secondary"
+                disabled={busy}
+                onClick={() => folderInput.current.click()}
+              >
+                <FolderUp size={17} />
+                {t("files.uploadFolder")}
+              </button>
+              <button
+                className="secondary"
+                disabled={busy}
+                onClick={() => {
+                  setError("");
+                  setModal({ mode: "folder", name: "" });
+                }}
+              >
+                <FolderPlus size={17} />
+                {t("files.newFolder")}
+              </button>
+            </>
+          )}
+          <input
+            ref={fileInput}
+            className="files-input"
+            type="file"
+            multiple
+            onChange={(e) => {
+              const files = [...e.target.files].map((file) => ({
+                file,
+                path: file.name,
+              }));
+              e.target.value = "";
+              void addUploads({ files, directories: [] });
+            }}
+          />
+          <input
+            ref={folderInput}
+            className="files-input"
+            type="file"
+            multiple
+            webkitdirectory=""
+            directory=""
+            onChange={(e) => {
+              const files = [...e.target.files].map((file) => ({
+                file,
+                path: file.webkitRelativePath || file.name,
+              }));
+              e.target.value = "";
+              void addUploads({ files, directories: [] });
+            }}
+          />
+          <button
+            className="icon-button"
+            disabled={loading}
+            aria-label={t("refresh")}
+            title={t("refresh")}
+            onClick={() => setRefresh((v) => v + 1)}
+          >
+            <RefreshCw size={18} className={loading ? "spinner" : ""} />
+          </button>
+          <div className="files-search">
+            <Search size={17} />
+            <input
+              aria-label={t("files.search")}
+              placeholder={t("files.search")}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </div>
+          <div className="calendar-view-switch">
+            <button
+              className={view === "list" ? "active" : ""}
+              aria-label={t("files.list")}
+              aria-pressed={view === "list"}
+              onClick={() => setView("list")}
+            >
+              <List size={17} />
+            </button>
+            <button
+              className={view === "grid" ? "active" : ""}
+              aria-label={t("files.grid")}
+              aria-pressed={view === "grid"}
+              onClick={() => setView("grid")}
+            >
+              <LayoutGrid size={17} />
+            </button>
+          </div>
+        </div>
       }
     >
+      {!!recoveries.length && (
+        <div className="office-recovery-banner" role="status">
+          <strong>
+            {t("office.recoveryAvailable", { count: recoveries.length })}
+          </strong>
+          {recoveries.map((r) => (
+            <div key={r.id}>
+              <span>{r.name}</span>
+              <button
+                className="secondary"
+                disabled={working}
+                onClick={() => void keepRecovery(r.id)}
+              >
+                {t("office.keepRecovery")}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
       {error && !modal && (
         <div className="notice error" role="alert">
           {t(error)}
@@ -741,105 +896,6 @@ export default function FilesPage({ settings, onBack, active = true }) {
             }
           }}
         >
-          <div className="files-toolbar">
-            {!trash && (
-              <>
-                <button
-                  className="primary"
-                  disabled={busy}
-                  onClick={() => fileInput.current.click()}
-                >
-                  <Upload size={17} />
-                  {t("files.upload")}
-                </button>
-                <button
-                  className="secondary"
-                  disabled={busy}
-                  onClick={() => folderInput.current.click()}
-                >
-                  <FolderUp size={17} />
-                  {t("files.uploadFolder")}
-                </button>
-                <button
-                  className="secondary"
-                  disabled={busy}
-                  onClick={() => {
-                    setError("");
-                    setModal({ mode: "folder", name: "" });
-                  }}
-                >
-                  <FolderPlus size={17} />
-                  {t("files.newFolder")}
-                </button>
-              </>
-            )}
-            <input
-              ref={fileInput}
-              className="files-input"
-              type="file"
-              multiple
-              onChange={(e) => {
-                const files = [...e.target.files].map((file) => ({
-                  file,
-                  path: file.name,
-                }));
-                e.target.value = "";
-                void addUploads({ files, directories: [] });
-              }}
-            />
-            <input
-              ref={folderInput}
-              className="files-input"
-              type="file"
-              multiple
-              webkitdirectory=""
-              directory=""
-              onChange={(e) => {
-                const files = [...e.target.files].map((file) => ({
-                  file,
-                  path: file.webkitRelativePath || file.name,
-                }));
-                e.target.value = "";
-                void addUploads({ files, directories: [] });
-              }}
-            />
-            <button
-              className="icon-button"
-              disabled={loading}
-              aria-label={t("refresh")}
-              title={t("refresh")}
-              onClick={() => setRefresh((v) => v + 1)}
-            >
-              <RefreshCw size={18} className={loading ? "spinner" : ""} />
-            </button>
-            <div className="files-search">
-              <Search size={17} />
-              <input
-                aria-label={t("files.search")}
-                placeholder={t("files.search")}
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
-            </div>
-            <div className="calendar-view-switch">
-              <button
-                className={view === "list" ? "active" : ""}
-                aria-label={t("files.list")}
-                aria-pressed={view === "list"}
-                onClick={() => setView("list")}
-              >
-                <List size={17} />
-              </button>
-              <button
-                className={view === "grid" ? "active" : ""}
-                aria-label={t("files.grid")}
-                aria-pressed={view === "grid"}
-                onClick={() => setView("grid")}
-              >
-                <LayoutGrid size={17} />
-              </button>
-            </div>
-          </div>
           <div className="files-breadcrumbs">
             {trash ? (
               <>
@@ -1114,14 +1170,6 @@ export default function FilesPage({ settings, onBack, active = true }) {
               </aside>
             )}
           </div>
-          <div className="files-footer">
-            <span>{t("files.selectionHint")}</span>
-            <span>
-              {t("files.maxUpload", {
-                size: fileSize(config.maxFileSize, locale),
-              })}
-            </span>
-          </div>
           {!!queue.length && (
             <div className="files-upload-panel">
               <header>
@@ -1368,6 +1416,16 @@ export default function FilesPage({ settings, onBack, active = true }) {
             )}
           </div>
         </Dialog>
+      )}
+      {officePreview && (
+        <OfficePreview
+          key={officePreview.source + ":" + officePreview.item.id}
+          item={officePreview.item}
+          source={officePreview.source}
+          onDownload={() => download(officePreview.item, true)}
+          onClose={() => setOfficePreview(null)}
+          onChanged={() => setRefresh((v) => v + 1)}
+        />
       )}
       {preview && (
         <Dialog

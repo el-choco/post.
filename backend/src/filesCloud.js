@@ -488,7 +488,100 @@ async function upload(c, row, progress) {
     throw e;
   }
 }
+async function officeDescriptor(c, itemId) {
+  // item() also enforces ownership of the app-scoped Google subtree.
+  const row = await item(c, itemId);
+  if (c.kind === "google") {
+    const res = await request(
+      c,
+      `${GOOGLE}/files/${id(row.id)}?fields=${encodeURIComponent(fields + ",version,md5Checksum")}`,
+    );
+    const text = await net.collect(res);
+    net.check(res.statusCode);
+    let current;
+    try {
+      current = JSON.parse(text);
+    } catch {
+      throw fail("files.errors.remote", 502);
+    }
+    return {
+      item: mapItem(c.kind, current),
+      revision: {
+        version: String(current.version || ""),
+        modified: current.modifiedTime,
+        size: String(current.size || "0"),
+        etag: res.headers.etag || "",
+      },
+    };
+  }
+  return {
+    item: mapItem(c.kind, row),
+    revision: {
+      etag: row.eTag || "",
+      modified: row.lastModifiedDateTime,
+      size: row.size || 0,
+    },
+  };
+}
+async function officeReplace(c, itemId, bytes, ext, expected) {
+  const current = await officeDescriptor(c, itemId);
+  if (
+    current.item.folder ||
+    current.item.native ||
+    current.item.readOnly ||
+    JSON.stringify(current.revision) !== JSON.stringify(expected)
+  )
+    throw fail("office.errors.conflict", 409);
+  const mime =
+    {
+      pdf: "application/pdf",
+      docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      odt: "application/vnd.oasis.opendocument.text",
+      ods: "application/vnd.oasis.opendocument.spreadsheet",
+      odp: "application/vnd.oasis.opendocument.presentation",
+      rtf: "application/rtf",
+    }[ext] || "application/octet-stream";
+  const res = await request(
+    c,
+    c.kind === "google"
+      ? `https://www.googleapis.com/upload/drive/v3/files/${id(itemId)}?uploadType=media&fields=${encodeURIComponent(fields + ",version,md5Checksum")}`
+      : `${GRAPH}/items/${id(itemId)}/content`,
+    {
+      method: c.kind === "google" ? "PATCH" : "PUT",
+      headers: {
+        "Content-Type": mime,
+        "Content-Length": String(bytes.length),
+        ...(expected.etag ? { "If-Match": expected.etag } : {}),
+      },
+      body: bytes,
+    },
+  );
+  const text = await net.collect(res);
+  net.check(res.statusCode);
+  let row;
+  try {
+    row = JSON.parse(text);
+  } catch {
+    throw fail("files.errors.remote", 502);
+  }
+  return c.kind === "google"
+    ? {
+        version: String(row.version || ""),
+        modified: row.modifiedTime,
+        size: String(row.size || "0"),
+        etag: res.headers.etag || "",
+      }
+    : {
+        etag: row.eTag || "",
+        modified: row.lastModifiedDateTime,
+        size: row.size || 0,
+      };
+}
 module.exports = {
+  officeDescriptor,
+  officeReplace,
   discover,
   list,
   item,

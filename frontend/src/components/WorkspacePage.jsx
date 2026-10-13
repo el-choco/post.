@@ -3,6 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 export default function WorkspacePage({
+  className = "",
   title,
   onBack,
   headerActions,
@@ -15,7 +16,7 @@ export default function WorkspacePage({
   }, []);
   return (
     <main
-      className={`workspace-page ${headerActions ? "workspace-page-with-actions" : ""}`}
+      className={`workspace-page ${headerActions ? "workspace-page-with-actions" : ""} ${className}`}
     >
       <header className="workspace-page-header">
         <div className="workspace-page-heading">

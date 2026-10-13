@@ -311,7 +311,7 @@ async function begin(account, source, input) {
         ? await folder(account, input.parentId)
         : String(input.parentId || "root");
     const pending = await db.get(
-      "SELECT COALESCE(SUM(size),0) AS size,COUNT(*) AS count FROM file_uploads WHERE account_id=? AND state IN ('pending','committing')",
+      "SELECT COALESCE(SUM(size),0) AS size,COUNT(*) AS count FROM file_uploads WHERE account_id=? AND state IN ('pending','committing','office')",
       [account],
     );
     if (pending.count >= 20) throw fail("files.errors.busy", 429);
@@ -454,7 +454,42 @@ async function finishLocal(row) {
     return id;
   });
 }
+async function replaceContent(account, id, expected, staged) {
+  return locked("account:" + account, async () => {
+    const row = await owned(account, id);
+    if (
+      row.folder ||
+      row.blob_id !== expected.blob ||
+      row.modified_at !== expected.modified
+    )
+      throw fail("office.errors.conflict", 409);
+    const modified = Math.max(Date.now(), row.modified_at + 1);
+    await db.transaction(async (run) => {
+      const result = await run(
+        "UPDATE file_nodes SET blob_id=?,key_enc=?,size=?,modified_at=? WHERE id=? AND account_id=? AND blob_id=? AND modified_at=? AND deleted_at IS NULL",
+        [
+          staged.id,
+          staged.key_enc,
+          staged.size,
+          modified,
+          id,
+          account,
+          expected.blob,
+          expected.modified,
+        ],
+      );
+      if (result.changes !== 1) throw fail("office.errors.conflict", 409);
+      await run(
+        "UPDATE file_uploads SET state='completed',result_id=? WHERE id=?",
+        [id, staged.id],
+      );
+    });
+    await fs.rm(blobPath(row.blob_id), { force: true }).catch(() => {});
+    return { blob: staged.id, modified };
+  });
+}
 module.exports = {
+  replaceContent,
   initFiles,
   cleanup,
   limits,
