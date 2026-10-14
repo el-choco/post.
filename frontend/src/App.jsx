@@ -8,10 +8,11 @@ import {
 import Login from "./pages/Login";
 import Mailbox from "./pages/Mailbox";
 import { useStore } from "./store";
+import { applyAppearance } from "./lib/appearance";
 import "./i18n";
 
 function App() {
-  const { darkMode } = useStore();
+  const { darkMode, appearance, appearancePreview } = useStore();
 
   useEffect(() => {
     if (darkMode) {
@@ -19,7 +20,12 @@ function App() {
     } else {
       document.documentElement.classList.remove("dark");
     }
-  }, [darkMode]);
+    applyAppearance(
+      document.documentElement,
+      appearancePreview || appearance,
+      darkMode,
+    );
+  }, [darkMode, appearance, appearancePreview]);
 
   return (
     <Router>

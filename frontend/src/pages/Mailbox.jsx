@@ -193,6 +193,7 @@ export default function Mailbox() {
           : await api("/settings");
         if (cancelled) return;
         setSettings(cfg);
+        useStore.getState().setAppearance(cfg.appearance);
         if (i18n.language !== cfg.language)
           await i18n.changeLanguage(cfg.language);
         setReady(true);
@@ -563,6 +564,7 @@ export default function Mailbox() {
       : t("inbox");
   async function saveSettings(saved) {
     setSettings(saved);
+    useStore.getState().setAppearance(saved.appearance);
     if (!saved.messageNewWindow) setReaderWindow(null);
     setPage(1);
     if (saved.hiddenFolders.includes(folder)) {
@@ -1727,12 +1729,19 @@ export default function Mailbox() {
       )}
       {section === "settings" && (
         <div className="workspace">
-          <SettingsPage
-            initial={settings}
-            folders={folders}
-            onSaved={saveSettings}
-            onClose={() => navigateSection("mail")}
-          />
+          {ready ? (
+            <SettingsPage
+              initial={settings}
+              folders={folders}
+              onSaved={saveSettings}
+              onClose={() => navigateSection("mail")}
+            />
+          ) : (
+            <p className="theme-settings-loading" role="status">
+              <LoaderCircle className="spinner" size={20} />
+              {t("loading")}
+            </p>
+          )}
         </div>
       )}
       {section === "contacts" && (

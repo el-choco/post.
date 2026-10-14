@@ -10,6 +10,8 @@ import filesDe from "./locales/files.de.json";
 import filesEn from "./locales/files.en.json";
 import officeDe from "./locales/office.de.json";
 import officeEn from "./locales/office.en.json";
+import themeDe from "./locales/theme.de.json";
+import themeEn from "./locales/theme.en.json";
 i18n.use(initReactI18next).init({
   resources: {
     de: {
@@ -19,6 +21,7 @@ i18n.use(initReactI18next).init({
         calendar: calendarDe,
         files: filesDe,
         office: officeDe,
+        theme: themeDe,
       },
     },
     en: {
@@ -28,6 +31,7 @@ i18n.use(initReactI18next).init({
         calendar: calendarEn,
         files: filesEn,
         office: officeEn,
+        theme: themeEn,
       },
     },
   },

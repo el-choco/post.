@@ -1,0 +1,36 @@
+{
+  "title": "Theme-Editor",
+  "hint": "Gestalte post. nach deinem Geschmack. Heller und dunkler Modus haben eigene Farben. Änderungen siehst du sofort.",
+  "mode": "Farben bearbeiten für",
+  "presets": "Farbvorlagen",
+  "preset": "Farbvorlage {{name}} auswählen",
+  "names": {
+    "blue": "Blau",
+    "violet": "Lavendel",
+    "mint": "Mint",
+    "rose": "Rosé"
+  },
+  "colors": "Deine Farben",
+  "accent": "Akzentfarbe",
+  "background": "Hintergrund",
+  "surface": "Flächen",
+  "text": "Textfarbe",
+  "contrast": "Text und Fläche haben wenig Kontrast. Eine andere Textfarbe verbessert die Lesbarkeit.",
+  "fixContrast": "Textfarbe optimieren",
+  "font": "Schriftart der Oberfläche",
+  "fontSize": "Schriftgröße der Oberfläche",
+  "fonts": {
+    "system": "Standard / System",
+    "arial": "Arial",
+    "verdana": "Verdana",
+    "georgia": "Georgia",
+    "mono": "Monospace"
+  },
+  "standard": "Standard",
+  "preview": "Vorschau",
+  "previewTitle": "Ein Postfach, das zu dir passt",
+  "previewText": "Farben und Schrift machen deinen Alltag ein bisschen persönlicher.",
+  "previewDetail": "HTML-Mails und Dokumenteditor behalten ihre eigene Formatierung.",
+  "saveHint": "Mit Speichern behältst du dein Theme. Beim Verlassen ohne Speichern wird die Vorschau verworfen. Schriftarten werden lokal verwendet.",
+  "reset": "Standard wiederherstellen"
+}

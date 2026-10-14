@@ -3,6 +3,22 @@
   "pageSize": 25,
   "layout": "right",
   "accent": "blue",
+  "appearance": {
+    "font": "system",
+    "fontSize": 16,
+    "light": {
+      "accent": "#3477d4",
+      "background": "#c1d7f4",
+      "surface": "#ffffff",
+      "text": "#283c57"
+    },
+    "dark": {
+      "accent": "#81b1f4",
+      "background": "#111a28",
+      "surface": "#182438",
+      "text": "#e4ebf7"
+    }
+  },
   "hiddenFolders": [],
   "name": "",
   "replyTo": "",

@@ -11,12 +11,15 @@ import {
   Server,
   Images,
   LoaderCircle,
+  Palette,
 } from "lucide-react";
 import { api, post } from "../api";
 import { useStore } from "../store";
 import WorkspacePage from "./WorkspacePage";
 import defaults from "../lib/preferences.json";
 import { desktopNotification, playSound } from "../lib/notifications";
+import ThemeEditor from "./ThemeEditor";
+import { normalizeAppearance } from "../lib/appearance";
 const sections = {
   interface: [
     ["language", ["de", "en"]],
@@ -113,6 +116,7 @@ const sections = {
 };
 const icons = {
   interface: Monitor,
+  theme: Palette,
   mailbox: Mail,
   display: Images,
   compose: PenLine,
@@ -124,13 +128,18 @@ const icons = {
 };
 export default function SettingsPage({ onClose, folders, initial, onSaved }) {
   const { t, i18n } = useTranslation();
-  const { user } = useStore();
-  const [settings, setSettings] = useState({ ...defaults, ...initial }),
+  const { user, previewAppearance } = useStore();
+  const [settings, setSettings] = useState({
+      ...defaults,
+      ...initial,
+      appearance: normalizeAppearance(initial?.appearance),
+    }),
     [tab, setTab] = useState("interface"),
     [saving, setSaving] = useState(false),
     [error, setError] = useState(""),
     [books, setBooks] = useState([]),
     [testNotice, setTestNotice] = useState("");
+  useEffect(() => () => previewAppearance(null), [previewAppearance]);
   useEffect(() => {
     if (user.demo) {
       let data = [];
@@ -347,7 +356,9 @@ export default function SettingsPage({ onClose, folders, initial, onSaved }) {
                 {t(
                   ["identity", "visibleFolders"].includes(key)
                     ? key
-                    : "prefs.tabs." + key,
+                    : key === "theme"
+                      ? "theme.title"
+                      : "prefs.tabs." + key,
                 )}
               </button>
             ))}
@@ -358,10 +369,22 @@ export default function SettingsPage({ onClose, folders, initial, onSaved }) {
               {t(
                 ["identity", "visibleFolders"].includes(tab)
                   ? tab
-                  : "prefs.tabs." + tab,
+                  : tab === "theme"
+                    ? "theme.title"
+                    : "prefs.tabs." + tab,
               )}
             </h3>
             {sections[tab]?.map(field)}
+            {tab === "theme" && (
+              <ThemeEditor
+                value={settings.appearance}
+                onChange={(appearance) => {
+                  setSettings((current) => ({ ...current, appearance }));
+                  previewAppearance(appearance);
+                  setTestNotice("");
+                }}
+              />
+            )}
             {tab === "display" && (
               <p className="muted preference-hint">{t("prefs.imagesHint")}</p>
             )}

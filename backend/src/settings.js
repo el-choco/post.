@@ -1,4 +1,5 @@
 const defaults = require("./preferences.json");
+const { normalizeAppearance } = require("./appearance");
 const choices = {
   language: ["de", "en"],
   layout: ["right", "bottom", "list"],
@@ -37,14 +38,21 @@ function readSettings(account) {
   try {
     stored = JSON.parse(account.settings || "{}");
   } catch {}
-  return { ...defaults, name: account.email?.split("@")[0] || "", ...stored };
+  return {
+    ...defaults,
+    name: account.email?.split("@")[0] || "",
+    ...stored,
+    appearance: normalizeAppearance(stored.appearance),
+  };
 }
 function normalizeSettings(body, current = defaults) {
   const result = { ...current };
   for (const [key, fallback] of Object.entries(defaults)) {
     if (body[key] === undefined) continue;
     const value = body[key];
-    if (choices[key])
+    if (key === "appearance")
+      result[key] = normalizeAppearance(value, current.appearance);
+    else if (choices[key])
       result[key] = choices[key].includes(value) ? value : fallback;
     else if (typeof fallback === "boolean") result[key] = value === true;
     else if (["pageSize", "contactPageSize"].includes(key))

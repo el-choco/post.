@@ -20,6 +20,7 @@
 | 📬 Postfach | Listenansicht, Lesebereich unten oder rechts |
 | ↔️ Oberfläche | Verschiebbare Ordnerleiste, Lesebereiche und Spalten |
 | 🌗 Darstellung | Heller und dunkler Modus |
+| 🎨 Theme-Editor | Eigene Farben für Hell/Dunkel, vier Farbvorlagen, lokale Schriftarten und skalierbare Schriftgröße; Vorschau und Zurücksetzen |
 | 🔍 Suche | Ordnerübergreifende Suche mit animierter Suchanzeige |
 | ✍️ Nachrichten | HTML/Klartext, Antworten, Weiterleiten, Cc/Bcc und Anhänge |
 | 📁 Ordner | Hierarchie, Unterordner, Erstellen, Löschen und Sichtbarkeit |
@@ -96,7 +97,7 @@ Die Webmail-Images müssen die ONLYOFFICE-Einbindung enthalten (**ab v1.4.0**). 
 3. Die folgenden Variablen in der `.env` bzw. unter **Environment variables** des Portainer-Stacks setzen:
 
 ```dotenv
-WEBMAIL_VERSION=1.4.1
+WEBMAIL_VERSION=1.5.0
 WEBMAIL_PORT=8886
 ONLYOFFICE_URL=https://office.example.com
 ONLYOFFICE_JWT_SECRET=HIER_DEN_ERZEUGTEN_SCHLUESSEL_EINTRAGEN
@@ -139,7 +140,7 @@ Für Docker Compose die [`.env.example`](.env.example) als `.env` neben der gew�
 | Variable | Bedeutung | Standard |
 |---|---|---|
 | `DOCKERHUB_NAMESPACE` | Namensraum der bereitgestellten Webmail-Images; normalerweise beibehalten | `paquele` |
-| `WEBMAIL_VERSION` | Image-Version für Frontend und Backend; z. B. `1.4.1` oder `latest` | `latest` |
+| `WEBMAIL_VERSION` | Image-Version für Frontend und Backend; z. B. `1.5.0` oder `latest` | `latest` |
 | `WEBMAIL_PORT` | Freier Port auf dem Docker-Host für die Webmail | `8886` |
 | `WEBMAIL_DATA_DIR` | Optionaler Host-Datenordner statt des benannten Volumes; enthält Datenbank, Schlüssel und lokale Dateien | Docker-Volume `webmail_data` |
 | `FILES_MAX_UPLOAD_MB` | Maximale Größe einer einzelnen hochgeladenen Datei in MiB; unabhängig vom Office-Limit | `1024` (1 GiB) |
@@ -348,6 +349,7 @@ Nicht zugeordnete Angaben und ungültige E-Mail-Werte bleiben bei ansonsten gül
 | Bereich | Möglichkeiten |
 |---|---|
 | 🖥️ Benutzeroberfläche | Sprache, Zeitzone, Zeit- und Datumsformat, kurze Datumsanzeige |
+| 🎨 Theme-Editor | Farben für Hell/Dunkel, Schriftart, Schriftgröße, Vorschau und Zurücksetzen |
 | 📬 Postfachansicht | Layout, Seitengröße und Zeitpunkt der Lesemarkierung |
 | 🔔 Benachrichtigungen | Hinweise in der Webmail, Desktop-Mitteilungen und Ton |
 | 👁️ Nachrichtendarstellung | HTML/Klartext, externe Bilder, Emoticons und lange Zitate |
@@ -357,6 +359,19 @@ Nicht zugeordnete Angaben und ungültige E-Mail-Werte bleiben bei ansonsten gül
 | 🗂️ Archiv | Aufteilung und Ablagestruktur |
 | 🛠️ Serververhalten | Löschen, Lesemarkierung und Bereinigung beim Abmelden |
 | 👤 Absenderidentität | Anzeigename, Antwortadresse und Signatur |
+
+### 🎨 Dein eigenes Theme
+
+Unter **Einstellungen → Theme-Editor** kannst du die Oberfläche anpassen:
+
+- **Farben:** Akzent, Hintergrund, Flächen und Text; heller und dunkler Modus haben eigene Farben.
+- **Vorlagen:** Blau, Lavendel, Mint oder Rosé als Ausgangspunkt wählen.
+- **Schrift:** Standard/System, Arial, Verdana, Georgia oder Monospace; verwendet werden lokal verfügbare Schriften bzw. passende Ersatzschriften.
+- **Größe:** 14–20 px als Basis; Überschriften, Listen und Beschriftungen werden proportional skaliert.
+- **Vorschau:** Änderungen erscheinen sofort. Erst **Speichern** übernimmt sie dauerhaft; Verlassen der Einstellungen ohne Speichern verwirft die Vorschau.
+- **Zurücksetzen:** **Standard wiederherstellen** setzt beide Farbmodi und die Schrift zurück. Danach speichern, um den Standard dauerhaft zu übernehmen.
+
+Das Theme wird pro Postfach in SQLite gespeichert und bei der Anmeldung auf anderen Geräten geladen. In der Demo bleibt es lokal im Browser. Bei wenig Textkontrast bietet der Editor eine passende Textfarbe an. HTML-Mails und ONLYOFFICE-Dokumente behalten ihre eigene Formatierung. Für den Theme-Editor sind keine zusätzlichen Container, `.env`-Variablen oder Schrift-Downloads nötig.
 
 ### 🖼️ Externe Bilder
 
@@ -415,6 +430,7 @@ Die Demo verbindet sich mit keinem Mailserver und versendet keine Nachrichten.
 | 📬 Mailbox | List view, bottom reading pane or right reading pane |
 | ↔️ Interface | Resizable folder sidebar, reading panes and columns |
 | 🌗 Appearance | Light and dark mode |
+| 🎨 Theme editor | Separate light/dark colors, four presets, local fonts and adjustable font size; live preview and reset |
 | 🔍 Search | Cross-folder search with an animated progress indicator |
 | ✍️ Messages | HTML/plain text, replies, forwarding, Cc/Bcc and attachments |
 | 📁 Folders | Hierarchy, subfolders, creation, deletion and visibility |
@@ -491,7 +507,7 @@ Use webmail images containing the ONLYOFFICE integration (**v1.4.0 or later**). 
 3. Set these values in `.env` or the Portainer stack's **Environment variables**:
 
 ```dotenv
-WEBMAIL_VERSION=1.4.1
+WEBMAIL_VERSION=1.5.0
 WEBMAIL_PORT=8886
 ONLYOFFICE_URL=https://office.example.com
 ONLYOFFICE_JWT_SECRET=REPLACE_WITH_YOUR_GENERATED_KEY
@@ -534,7 +550,7 @@ For Docker Compose, save [`.env.example`](.env.example) as `.env` next to the ch
 | Variable | Purpose | Default |
 |---|---|---|
 | `DOCKERHUB_NAMESPACE` | Namespace of the provided webmail images; normally leave unchanged | `paquele` |
-| `WEBMAIL_VERSION` | Image version for frontend and backend, such as `1.4.1` or `latest` | `latest` |
+| `WEBMAIL_VERSION` | Image version for frontend and backend, such as `1.5.0` or `latest` | `latest` |
 | `WEBMAIL_PORT` | Available Docker host port for webmail | `8886` |
 | `WEBMAIL_DATA_DIR` | Optional host data directory instead of the named volume; holds the database, key and local files | Docker volume `webmail_data` |
 | `FILES_MAX_UPLOAD_MB` | Maximum size of one uploaded file in MiB; independent of the Office limit | `1024` (1 GiB) |
@@ -743,6 +759,7 @@ Unmapped details and invalid email values are retained as additional fields when
 | Area | Options |
 |---|---|
 | 🖥️ User interface | Language, timezone, time/date formats and short dates |
+| 🎨 Theme editor | Light/dark colors, font, font size, live preview and reset |
 | 📬 Mailbox view | Layout, page size and read-marking delay |
 | 🔔 Notifications | In-app notices, desktop notifications and sounds |
 | 👁️ Message display | HTML/plain text, external images, emoticons and long quotations |
@@ -752,6 +769,19 @@ Unmapped details and invalid email values are retained as additional fields when
 | 🗂️ Archive | Subdivision and filing structure |
 | 🛠️ Server behavior | Deletion, read marking and cleanup on sign-out |
 | 👤 Sender identity | Display name, reply-to address and signature |
+
+### 🎨 Make the theme your own
+
+Open **Settings → Theme editor** to customize the interface:
+
+- **Colors:** Accent, background, surfaces and text; light and dark modes have separate colors.
+- **Presets:** Start with Blue, Lavender, Mint or Rose.
+- **Font:** Default/System, Arial, Verdana, Georgia or Monospace; available local fonts or suitable fallbacks are used.
+- **Size:** A 14–20 px base size; headings, lists and labels scale proportionally.
+- **Preview:** Changes appear immediately. Choose **Save** to keep them; leaving settings without saving discards the preview.
+- **Reset:** **Restore defaults** resets both color modes and the font. Save to keep the restored defaults.
+
+Themes are stored per mailbox in SQLite and loaded when signing in on other devices. The demo stores them locally in the browser. When text contrast is low, the editor offers a suitable text color. HTML emails and ONLYOFFICE documents retain their own formatting. No additional containers, `.env` variables or font downloads are needed.
 
 ### 🖼️ External images
 

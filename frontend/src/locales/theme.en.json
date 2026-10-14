@@ -1,0 +1,36 @@
+{
+  "title": "Theme editor",
+  "hint": "Make post. your own. Light and dark modes have separate colors. Changes appear immediately.",
+  "mode": "Edit colors for",
+  "presets": "Color presets",
+  "preset": "Choose the {{name}} color preset",
+  "names": {
+    "blue": "Blue",
+    "violet": "Lavender",
+    "mint": "Mint",
+    "rose": "Rose"
+  },
+  "colors": "Your colors",
+  "accent": "Accent color",
+  "background": "Background",
+  "surface": "Surfaces",
+  "text": "Text color",
+  "contrast": "Text and surface colors have low contrast. A different text color improves readability.",
+  "fixContrast": "Improve text color",
+  "font": "Interface font",
+  "fontSize": "Interface font size",
+  "fonts": {
+    "system": "Default / System",
+    "arial": "Arial",
+    "verdana": "Verdana",
+    "georgia": "Georgia",
+    "mono": "Monospace"
+  },
+  "standard": "Default",
+  "preview": "Preview",
+  "previewTitle": "An inbox that feels like yours",
+  "previewText": "Colors and type bring a personal touch to your everyday workspace.",
+  "previewDetail": "HTML emails and the document editor keep their own formatting.",
+  "saveHint": "Save to keep your theme. Leaving without saving discards the preview. Fonts are used locally.",
+  "reset": "Restore defaults"
+}

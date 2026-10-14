@@ -12,6 +12,11 @@ for (const file of [
   "src/components/MessageBody.jsx",
   "src/components/MessageAttachments.jsx",
   "src/components/SettingsPage.jsx",
+  "src/components/ThemeEditor.jsx",
+  "src/lib/appearance.js",
+  "src/lib/preferences.json",
+  "src/locales/theme.de.json",
+  "src/locales/theme.en.json",
   "src/components/Contacts.jsx",
   "src/components/CalendarPage.jsx",
   "src/components/CalendarOAuthSetup.jsx",
@@ -38,7 +43,6 @@ const buildInfo = {
   builtAt: new Date().toISOString(),
 };
 
-                           
 export default defineConfig({
   plugins: [
     react(),
