@@ -4,7 +4,7 @@ const nodemailer = require("nodemailer");
 
 const SELF_SIGNED = process.env.ALLOW_SELF_SIGNED === "true";
 
-// Well-known providers (fast path, works offline)
+                                                  
 const BUILTIN = {
   "gmail.com": ["imap.gmail.com", 993, true, "smtp.gmail.com", 465, true],
   "googlemail.com": ["imap.gmail.com", 993, true, "smtp.gmail.com", 465, true],
@@ -71,7 +71,7 @@ function builtinConfig(domain, email) {
   };
 }
 
-/** Parses Mozilla autoconfig XML (config-v1.1.xml) */
+                                                      
 function parseConfig(xml, email) {
   const [local, domain] = email.split("@");
   const sub = (s) =>
@@ -121,7 +121,7 @@ async function fetchConfig(url, email) {
 
 const ISPDB = (d) => `https://autoconfig.thunderbird.net/v1.1/${d}`;
 
-/** Returns an ordered list of candidate server configurations */
+                                                                 
 async function discover(email) {
   const domain = email.split("@")[1].toLowerCase();
   const list = [];
@@ -142,7 +142,7 @@ async function discover(email) {
   ]);
   [own, wellKnown, ispdb].forEach((c) => c && list.push(c));
 
-  // Hosted domains: use the MX provider's configuration
+                                                        
   if (!list.length) {
     try {
       const mx = await dns.resolveMx(domain);
@@ -161,11 +161,11 @@ async function discover(email) {
         }
       }
     } catch {
-      /* ignore */
+                  
     }
   }
 
-  // Last resort: common host names
+                                   
   for (const h of [`imap.${domain}`, `mail.${domain}`, domain]) {
     const smtpHost = h.startsWith("imap.") ? `smtp.${domain}` : h;
     list.push({
@@ -199,7 +199,7 @@ async function testImap(cfg, user, pass) {
     try {
       client.close();
     } catch {
-      /* ignore */
+                  
     }
     return {
       ok: false,
@@ -248,10 +248,10 @@ async function pickSmtp(cfg, imapUser, pass) {
   return null;
 }
 
-/**
- * Discovers IMAP/SMTP settings and verifies the credentials.
- * Resolves with { imap, smtp } or throws { code: 'auth' | 'connect', message }.
- */
+   
+                                                             
+                                                                                
+   
 async function resolveAccount(email, password) {
   const configs = await discover(email);
   let authError = null;
@@ -277,7 +277,7 @@ async function resolveAccount(email, password) {
       connectError = r;
       break;
     }
-    if (authError) break; // server reached but credentials rejected
+    if (authError) break;                                           
   }
 
   if (authError) throw { code: "auth", message: authError.error };

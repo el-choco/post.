@@ -23,13 +23,13 @@ const all = (sql, params = []) =>
     db.all(sql, params, (err, rows) => (err ? reject(err) : resolve(rows))),
   );
 
-/** Creates the complete schema on first start (idempotent). */
+                                                               
 async function init() {
   await run("PRAGMA journal_mode = WAL");
   await run("PRAGMA foreign_keys = ON");
   await run("PRAGMA busy_timeout = 5000");
 
-  // Preserve legacy tables; schema creation must never destroy existing data.
+                                                                              
 
   await run(`CREATE TABLE IF NOT EXISTS mail_accounts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -111,7 +111,7 @@ async function init() {
   await require('./office').initOffice();
 }
 
-// A dedicated connection keeps imports atomic without interleaving unrelated writes.
+                                                                                     
 async function transaction(fn) {
   const connection = new sqlite3.Database(path.join(dataDir, "webmail.db"));
   const exec = (sql, params = []) =>

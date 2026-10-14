@@ -1,6 +1,6 @@
 const crypto = require("node:crypto");
 
-/** One serialized, reusable connection per account. Never overlap mailbox commands. */
+                                                                                       
 function createImapPool(makeClient, idleMs = 90000) {
   const slots = new Map();
   async function close(client) {

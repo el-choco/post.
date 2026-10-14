@@ -2050,7 +2050,7 @@ h3 {
   }
 }
 
-/* Expanded preferences and address books */
+
 .preferences-form .settings-content {
   height: min(65vh, 680px);
   min-height: 400px;
@@ -2681,7 +2681,7 @@ h3 {
   }
 }
 
-/* Calendar stays inside the workspace; editors share the page, without overlays. */
+
 .calendar-toolbar {
   display: flex;
   align-items: center;
@@ -3073,7 +3073,7 @@ h3 {
   cursor: pointer;
 }
 
-/* Files workspace */
+
 .dialog[open]:has(.office-preview) {
   display: flex;
   flex-direction: column;

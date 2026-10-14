@@ -3,7 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const { dataDir } = require("./db");
 
-// Key comes from SECRET_KEY env var, otherwise a random key is generated once in data/secret.key
+                                                                                                 
 function loadKey() {
   if (process.env.SECRET_KEY) {
     return crypto.createHash("sha256").update(process.env.SECRET_KEY).digest();

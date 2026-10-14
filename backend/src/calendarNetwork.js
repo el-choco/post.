@@ -34,7 +34,7 @@ function calendarUrl(value) {
     throw fail("calendar.errors.url");
   return url;
 }
-// Resolve once and pin the validated address for this request, including TLS SNI.
+                                                                                  
 async function request(
   value,
   { method = "GET", headers = {}, body, redirects = 0 } = {},

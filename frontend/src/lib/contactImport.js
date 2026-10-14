@@ -1,5 +1,5 @@
-// Match complete contact content, never just an email (which may be empty or shared).
-// Keep this canonical form aligned with backend/src/contactImport.js.
+                                                                                      
+                                                                      
 export function contactImportKey(contact) {
   function canonical(value) {
     if (typeof value === "string") return value.trim();

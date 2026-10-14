@@ -52,7 +52,7 @@ export default function FolderTree({
   const [revealedSelection, setRevealedSelection] = useState(selectionKey);
   if (revealedSelection !== selectionKey) {
     setRevealedSelection(selectionKey);
-    // Reveal a newly selected child, including folders created inside a closed branch.
+                                                                                       
     setCollapsed((current) => {
       const next = new Set(
         [...current].filter(

@@ -22,7 +22,7 @@ export default function WindowFrame({ popup, onClose, children }) {
     return () => {
       popup.removeEventListener("beforeunload", onClose);
       root.remove();
-      // StrictMode reattaches the portal immediately after its development cleanup.
+                                                                                    
       queueMicrotask(() => {
         if (!root.isConnected && !popup.closed) popup.close();
       });

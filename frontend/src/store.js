@@ -5,7 +5,7 @@ function readStoredUser() {
     const storedUser = localStorage.getItem("user");
     return storedUser ? JSON.parse(storedUser) : null;
   } catch {
-    // A stale or manually edited value must not prevent the app from mounting.
+                                                                               
     localStorage.removeItem("user");
     return null;
   }
@@ -28,7 +28,7 @@ export const useStore = create((set) => ({
       localStorage.setItem("theme", newTheme ? "dark" : "light");
       return { darkMode: newTheme };
     }),
-  layout: localStorage.getItem("layout") || "right", // 'right', 'bottom', 'list'
+  layout: localStorage.getItem("layout") || "right",                             
   setLayout: (layout) => {
     localStorage.setItem("layout", layout);
     set({ layout });

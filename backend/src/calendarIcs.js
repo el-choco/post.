@@ -7,7 +7,7 @@ function parse(text) {
   if (typeof text !== "string" || text.length > 5 * 1024 * 1024)
     throw fail("calendar.errors.tooLarge");
   try {
-    // A feed's timezone definitions must not affect another user's calendars.
+                                                                              
     ICAL.TimezoneService.reset();
     const root = new ICAL.Component(ICAL.parse(text));
     if (root.name !== "vcalendar") throw new Error();
@@ -224,7 +224,7 @@ function expand(text, start, end, metadata = {}) {
     };
     if (!e.isRecurring()) add(e, e.startDate, e.endDate);
     else {
-      // Bound both output size and work for adversarial/high-frequency recurrence rules.
+                                                                                         
       const iterator = e.iterator();
       let next,
         count = 0;

@@ -2,8 +2,8 @@ const https = require("node:https");
 const dns = require("node:dns/promises");
 const { publicAddress, fail } = require("./calendarNetwork");
 
-// Provider-supplied upload/download URLs are resolved and pinned too. The CalDAV
-// exception for LAN servers must never relax this boundary for file transfers.
+                                                                                 
+                                                                               
 async function request(
   value,
   { method = "GET", headers = {}, body, signal } = {},

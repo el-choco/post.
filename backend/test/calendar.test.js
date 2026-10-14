@@ -54,7 +54,7 @@ async function call(
   };
 }
 before(async () => {
-  // Existing 1.2.0 databases have six OAuth state columns.
+                                                           
   await db.run(`CREATE TABLE calendar_oauth_states (
     state_hash TEXT PRIMARY KEY,account_id INTEGER NOT NULL,
     session_hash TEXT NOT NULL,provider TEXT NOT NULL,verifier TEXT NOT NULL,expires_at INTEGER NOT NULL)`);

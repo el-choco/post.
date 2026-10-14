@@ -1,4 +1,4 @@
-// Same canonical form as frontend/src/lib/contactImport.js, including legacy contacts.
+                                                                                       
 function contactImportKey(contact) {
   function canonical(value) {
     if (typeof value === "string") return value.trim();

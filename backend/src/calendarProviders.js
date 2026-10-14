@@ -392,7 +392,7 @@ async function listEvents(calendar, connection, start, end) {
   if (connection.kind === "microsoft")
     for (let index = 0; index < list.length; index++) {
       const item = list[index];
-      // Graph's default UTC representation can move an all-day start to the previous day.
+                                                                                          
       if (
         item.isAllDay &&
         item.start.dateTime.slice(11, 16) !== "00:00" &&
@@ -436,7 +436,7 @@ async function writeEvent(
       if (!revision || revision !== old.headers.etag)
         throw network.fail("calendar.errors.conflict", 409);
     }
-    // Preserve attendees, alarms, timezone definitions and unknown properties when editing.
+                                                                                            
     await dav(
       connection,
       url,

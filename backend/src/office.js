@@ -325,8 +325,8 @@ async function save(row, payload) {
     "application/octet-stream",
     bytes,
   );
-  // Persist recovery before touching the original, so a failed provider request
-  // or a process interruption cannot discard the assembled document.
+                                                                                
+                                                                     
   const recoveryName =
     payload.filetype && formats[payload.filetype.toLowerCase()]
       ? row.name.replace(/\.[^.]+$/, "." + payload.filetype.toLowerCase())
@@ -453,8 +453,8 @@ function createOfficeRouter(auth, wrap) {
         cfg.secret,
       );
       const payload = raw.payload || raw;
-      // Only signed fields are used. An unsigned body cannot override a URL,
-      // status or key accepted by the document server's outbox JWT.
+                                                                             
+                                                                    
       let saveError = false;
       await storage.locked("office-save:" + req.params.id, async () => {
         const row = await session(req.params.id);
@@ -532,8 +532,8 @@ function createOfficeRouter(auth, wrap) {
           const row = await session(req.params.id, req.account.id);
           if (!row.recovery_id) throw fail("office.errors.notFound", 404);
           let staged = await storage.upload(row.account_id, row.recovery_id);
-          // After a crash the recovery marker may refer to a blob already owned
-          // by the original. A second node must receive its own encrypted blob.
+                                                                                
+                                                                                
           if (
             await db.get("SELECT id FROM file_nodes WHERE blob_id=?", [
               staged.id,

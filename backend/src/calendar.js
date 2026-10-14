@@ -374,7 +374,7 @@ function createCalendarRouter(auth, wrap) {
       );
       const events = [],
         errors = [];
-      // Isolate failed providers: local appointments remain usable when a service is offline.
+                                                                                              
       const loadCalendar = async (c) => {
         try {
           let list;

@@ -55,7 +55,7 @@ function base(c) {
   return c.kind === "google" ? GOOGLE : GRAPH;
 }
 async function request(c, url, options = {}) {
-  // Authorization headers may only be sent to the actual provider API.
+                                                                       
   if (new URL(url).origin !== new URL(base(c)).origin)
     throw fail("files.errors.remote", 502);
   const token = await oauth.credentials(c);
@@ -176,8 +176,8 @@ async function list(
   const parentId = await folder(c, parent);
   if (c.kind === "google") {
     let q = `trashed=${trash ? "true" : "false"}`;
-    // In limited mode, only the dedicated post. tree is exposed, even if Google
-    // issued a token with broader grants from a previous authorization.
+                                                                                
+                                                                        
     if (!trash) q += ` and '${escapeQuery(parentId)}' in parents`;
     if (query) q += ` and name contains '${escapeQuery(query)}'`;
     if (folders) q += " and mimeType='application/vnd.google-apps.folder'";
@@ -371,7 +371,7 @@ async function download(c, itemId) {
   ) {
     const target = new URL(res.headers.location, url).href;
     res.destroy();
-    // Signed download links receive no bearer token, including cross-origin links.
+                                                                                   
     url = target;
     res = await net.request(target);
   }
@@ -489,7 +489,7 @@ async function upload(c, row, progress) {
   }
 }
 async function officeDescriptor(c, itemId) {
-  // item() also enforces ownership of the app-scoped Google subtree.
+                                                                     
   const row = await item(c, itemId);
   if (c.kind === "google") {
     const res = await request(

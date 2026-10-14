@@ -43,7 +43,7 @@ const SELF_SIGNED = process.env.ALLOW_SELF_SIGNED === "true";
 const wrap = (fn) => (req, res, next) =>
   Promise.resolve(fn(req, res, next)).catch(next);
 
-/* ------------------------------ Auth ------------------------------ */
+                                                                        
 
 const failedLogins = new Map();
 
@@ -204,7 +204,7 @@ app.get("/api/me", auth, (req, res) => {
   res.json({ email: a.email, imapHost: a.imap_host, smtpHost: a.smtp_host });
 });
 
-/* ----------------------------- Settings ----------------------------- */
+                                                                          
 
 app.get("/api/settings", auth, (req, res) =>
   res.json(readSettings(req.account)),
@@ -226,7 +226,7 @@ app.put(
   }),
 );
 
-/* ------------------------------ Folders ------------------------------ */
+                                                                           
 app.post("/api/refresh", auth, (req, res) => {
   invalidate(req.account.id);
   res.json({ success: true });
@@ -314,7 +314,7 @@ app.put(
     try {
       mailboxSaved = await syncMailboxDraft(req.account, draft);
     } catch {
-      /* SQLite copy remains recoverable if IMAP is unavailable. */
+                                                                   
     }
     res.json({ success: true, mailboxSaved });
   }),
@@ -375,7 +375,7 @@ app.post(
       try {
         await c.mailboxSubscribe(path);
       } catch {
-        /* ignore */
+                    
       }
       return { path, name, delimiter, selectable: true, unseen: 0, total: 0 };
     });
@@ -457,7 +457,7 @@ app.delete(
   }),
 );
 
-/* ------------------------------ Messages ------------------------------ */
+                                                                            
 
 function hasAttachment(node) {
   if (!node) return false;
@@ -779,7 +779,7 @@ app.get(
   }),
 );
 
-/* Bulk operations. Body: { items: [{folder, uid}], ... } */
+                                                            
 
 async function forEachFolder(req, fn) {
   const groups = groupItems(req.body.items);
@@ -921,7 +921,7 @@ app.post(
         .status(400)
         .json({ error: "No spam folder found", code: "no_junk" });
     await forEachFolder(req, async (c, folder, uids) => {
-      // "Not spam": messages inside the junk folder go back to the inbox
+                                                                         
       const dest = folder === junk.path ? "INBOX" : junk.path;
       await c.messageMove(uids, dest, { uid: true });
     });
@@ -929,7 +929,7 @@ app.post(
   }),
 );
 
-/* ------------------------------- Search ------------------------------- */
+                                                                            
 app.get(
   "/api/search",
   auth,
@@ -1035,7 +1035,7 @@ app.get(
   }),
 );
 
-/* -------------------------------- Send -------------------------------- */
+                                                                            
 
 const isMail = (s) => /^[^@\s,;<>]+@[^@\s,;<>]+\.[^@\s,;<>]+$/.test(s);
 const cleanList = (v) =>
@@ -1096,7 +1096,7 @@ async function syncMailboxDraft(account, draft) {
       saved.uidValidity ||
         (await c.status(folder.path, { uidValidity: true })).uidValidity,
     );
-    // Delete only a previous draft created by this application in the same UID generation.
+                                                                                           
     if (previous) await deleteDraftReference(c, previous);
     await run(
       "INSERT INTO draft_refs(account_id,folder,uid,uid_validity,marker) VALUES(?,?,?,?,?) ON CONFLICT(account_id) DO UPDATE SET folder=excluded.folder,uid=excluded.uid,uid_validity=excluded.uid_validity,marker=excluded.marker",
@@ -1236,7 +1236,7 @@ app.post(
       transport.close();
     }
 
-    // Gmail stores sent mails itself; for all others keep a copy in the sent folder
+                                                                                    
     if (
       !/gmail|googlemail/i.test(acc.imap_host) ||
       settings.sentFolder ||
@@ -1254,7 +1254,7 @@ app.post(
           if (target) await c.append(target.path, raw, ["\\Seen"]);
         });
       } catch {
-        /* sending succeeded, copy is best effort */
+                                                    
       }
     }
     try {
@@ -1265,7 +1265,7 @@ app.post(
           recipients.map((address) => ({ address })),
         );
     } catch {
-      /* SMTP succeeded; metadata cleanup must not cause duplicate sends. */
+                                                                            
     }
     await removeMailboxDraft(acc).catch(() => {});
     await run("DELETE FROM local_drafts WHERE account_id=?", [acc.id]).catch(
@@ -1275,13 +1275,13 @@ app.post(
   }),
 );
 
-/* ------------------------------ Contacts ------------------------------ */
+                                                                            
 app.use("/api", require("./contacts").createContactsRouter(auth, wrap));
 app.use("/api/calendar", require("./calendar").createCalendarRouter(auth, wrap));
 app.use("/api/files", require("./files").createFilesRouter(auth, wrap));
 app.use("/api/office", require("./office").createOfficeRouter(auth, wrap));
 
-/* ------------------------------- Errors ------------------------------- */
+                                                                            
 
 app.use("/api", (req, res) => res.status(404).json({ error: "Not found" }));
 

@@ -22,7 +22,7 @@ function makeClient(acc) {
 
 const { withImap, closeAll } = createImapPool(makeClient);
 
-// Fallback detection for servers that do not announce SPECIAL-USE flags
+                                                                        
 const NAME_HINTS = {
   "\\Sent": [
     "sent",
@@ -82,7 +82,7 @@ async function listFolders(client, withStatus = false) {
 
 const findSpecial = (folders, use) => folders.find((f) => f.specialUse === use);
 
-/** Groups [{folder, uid}] into Map(folder -> uid[]) */
+                                                       
 function groupItems(items) {
   const map = new Map();
   for (const it of Array.isArray(items) ? items : []) {

@@ -96,7 +96,7 @@ Die Webmail-Images müssen die ONLYOFFICE-Einbindung enthalten (**ab v1.4.0**). 
 3. Die folgenden Variablen in der `.env` bzw. unter **Environment variables** des Portainer-Stacks setzen:
 
 ```dotenv
-WEBMAIL_VERSION=1.4.0
+WEBMAIL_VERSION=1.4.1
 WEBMAIL_PORT=8886
 ONLYOFFICE_URL=https://office.example.com
 ONLYOFFICE_JWT_SECRET=HIER_DEN_ERZEUGTEN_SCHLUESSEL_EINTRAGEN
@@ -139,7 +139,7 @@ Für Docker Compose die [`.env.example`](.env.example) als `.env` neben der gew�
 | Variable | Bedeutung | Standard |
 |---|---|---|
 | `DOCKERHUB_NAMESPACE` | Namensraum der bereitgestellten Webmail-Images; normalerweise beibehalten | `paquele` |
-| `WEBMAIL_VERSION` | Image-Version für Frontend und Backend; z. B. `1.4.0` oder `latest` | `latest` |
+| `WEBMAIL_VERSION` | Image-Version für Frontend und Backend; z. B. `1.4.1` oder `latest` | `latest` |
 | `WEBMAIL_PORT` | Freier Port auf dem Docker-Host für die Webmail | `8886` |
 | `WEBMAIL_DATA_DIR` | Optionaler Host-Datenordner statt des benannten Volumes; enthält Datenbank, Schlüssel und lokale Dateien | Docker-Volume `webmail_data` |
 | `FILES_MAX_UPLOAD_MB` | Maximale Größe einer einzelnen hochgeladenen Datei in MiB; unabhängig vom Office-Limit | `1024` (1 GiB) |
@@ -491,7 +491,7 @@ Use webmail images containing the ONLYOFFICE integration (**v1.4.0 or later**). 
 3. Set these values in `.env` or the Portainer stack's **Environment variables**:
 
 ```dotenv
-WEBMAIL_VERSION=1.4.0
+WEBMAIL_VERSION=1.4.1
 WEBMAIL_PORT=8886
 ONLYOFFICE_URL=https://office.example.com
 ONLYOFFICE_JWT_SECRET=REPLACE_WITH_YOUR_GENERATED_KEY
@@ -534,7 +534,7 @@ For Docker Compose, save [`.env.example`](.env.example) as `.env` next to the ch
 | Variable | Purpose | Default |
 |---|---|---|
 | `DOCKERHUB_NAMESPACE` | Namespace of the provided webmail images; normally leave unchanged | `paquele` |
-| `WEBMAIL_VERSION` | Image version for frontend and backend, such as `1.4.0` or `latest` | `latest` |
+| `WEBMAIL_VERSION` | Image version for frontend and backend, such as `1.4.1` or `latest` | `latest` |
 | `WEBMAIL_PORT` | Available Docker host port for webmail | `8886` |
 | `WEBMAIL_DATA_DIR` | Optional host data directory instead of the named volume; holds the database, key and local files | Docker volume `webmail_data` |
 | `FILES_MAX_UPLOAD_MB` | Maximum size of one uploaded file in MiB; independent of the Office limit | `1024` (1 GiB) |

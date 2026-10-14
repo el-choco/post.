@@ -1,4 +1,4 @@
-/** Short-lived metadata only; no message bodies or passwords. */
+                                                                 
 function createCache(maxEntries = 100) {
   const entries = new Map();
   async function cached(accountId, key, ttl, read) {

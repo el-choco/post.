@@ -450,7 +450,7 @@ async function finishLocal(row) {
         throw fail("files.errors.conflict", 409);
       throw e;
     }
-    // The node owns this blob now. Cleanup of completed upload records must not delete it.
+                                                                                           
     return id;
   });
 }

@@ -65,8 +65,8 @@ function savedUrl(value, cfg = config()) {
       .some((p) => [".", ".."].includes(decodeURIComponent(p)))
   )
     throw fail("office.errors.remote", 502);
-  // A callback URL can only address the configured document server, never a
-  // provider or an arbitrary LAN host. Use its internal origin inside Docker.
+                                                                            
+                                                                              
   return cfg.internalUrl + url.pathname + url.search;
 }
 async function download(value, cfg = config()) {

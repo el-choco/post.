@@ -1,6 +1,6 @@
 import { contactImportKey } from "./contactImport.js";
 
-// RFC-style quoted CSV, including embedded newlines and comma/semicolon/tab exports.
+                                                                                     
 export function parseCsv(text) {
   text = text.replace(/^\uFEFF/, "");
   let quoted = false,
@@ -177,7 +177,7 @@ export function importPreview(text) {
       profile[key] = value(index);
       if (key === "birthday" || key === "anniversary") {
         profile[key] = dateValue(value(index));
-        // Keep dates we cannot interpret in an additional field instead of losing them.
+                                                                                        
         if (value(index) && !profile[key]) continue;
       }
       used.add(index);
@@ -199,7 +199,7 @@ export function importPreview(text) {
         used.add(index);
         if (typeIndex !== index) used.add(typeIndex);
       }
-      // Invalid addresses remain in extra fields, without rejecting the person.
+                                                                                
     }
     for (const index of phoneIndices) {
       const typeIndex = headers.indexOf(
@@ -216,7 +216,7 @@ export function importPreview(text) {
       used.add(index);
       if (typeIndex !== index) used.add(typeIndex);
     }
-    // Outlook home/business/other addresses and Google's numbered address fields.
+                                                                                  
     const addressPrefixes = new Map([
       ["home", "home"],
       ["business", "work"],
@@ -309,7 +309,7 @@ export function importPreview(text) {
     const fingerprint = contactImportKey(contact);
     if (fingerprints.has(fingerprint)) duplicates++;
     fingerprints.add(fingerprint);
-    // Keep every valid row; duplicate handling is chosen in the import dialog.
+                                                                               
     contacts.push(contact);
   }
   return { contacts, skipped, duplicates, totalRows: rows.length };

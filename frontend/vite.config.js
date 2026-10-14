@@ -38,7 +38,7 @@ const buildInfo = {
   builtAt: new Date().toISOString(),
 };
 
-// https://vite.dev/config/
+                           
 export default defineConfig({
   plugins: [
     react(),
