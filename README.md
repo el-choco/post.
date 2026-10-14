@@ -17,7 +17,7 @@
 | Bereich | Funktionen |
 |---|---|
 | 🔐 Anmeldung | E-Mail-Adresse und Passwort oder App-Passwort; automatische IMAP-/SMTP-Erkennung |
-| 📬 Postfach | Listenansicht, Lesebereich unten oder rechts |
+| 📬 Postfach | Listenansicht, Lesebereich unten oder rechts; seitenweiser Abruf und getrennte Hintergrundprüfung |
 | ↔️ Oberfläche | Verschiebbare Ordnerleiste, Lesebereiche und Spalten |
 | 🌗 Darstellung | Heller und dunkler Modus |
 | 🎨 Theme-Editor | Eigene Farben für Hell/Dunkel, vier Farbvorlagen, lokale Schriftarten und skalierbare Schriftgröße; Vorschau und Zurücksetzen |
@@ -32,6 +32,10 @@
 | 📥 Import | Google-/Outlook-CSV, einschließlich Kontakten ohne E-Mail-Adresse |
 | 📤 Export | Kontakte als CSV/vCard; Nachrichten als EML |
 | ⚙️ Einstellungen | Sprache, Darstellung, Identität, Signatur, Spezialordner und Benachrichtigungen |
+
+### ⚡ Mailabruf und Fehlerdiagnose
+
+Die normale Mail-Liste lädt nur die benötigte Seite. Hintergrundprüfungen verwenden eine getrennte Verbindung. Bei ausgeschalteter Prüfung aller Ordner wird nur der Posteingang im Hintergrund geprüft; andere Ordnerzähler aktualisieren sich beim Öffnen. Fehler bleiben mit aufklappbaren Details sichtbar. Hinweise zu Zeitgrenzen, großen Anhängen und Diagnose: [PERFORMANCE.md](PERFORMANCE.md).
 
 ### 🧭 Welche Variante passt zu deinem Server?
 
@@ -97,7 +101,7 @@ Die Webmail-Images müssen die ONLYOFFICE-Einbindung enthalten (**ab v1.4.0**). 
 3. Die folgenden Variablen in der `.env` bzw. unter **Environment variables** des Portainer-Stacks setzen:
 
 ```dotenv
-WEBMAIL_VERSION=1.5.0
+WEBMAIL_VERSION=1.5.1
 WEBMAIL_PORT=8886
 ONLYOFFICE_URL=https://office.example.com
 ONLYOFFICE_JWT_SECRET=HIER_DEN_ERZEUGTEN_SCHLUESSEL_EINTRAGEN
@@ -140,7 +144,7 @@ Für Docker Compose die [`.env.example`](.env.example) als `.env` neben der gew�
 | Variable | Bedeutung | Standard |
 |---|---|---|
 | `DOCKERHUB_NAMESPACE` | Namensraum der bereitgestellten Webmail-Images; normalerweise beibehalten | `paquele` |
-| `WEBMAIL_VERSION` | Image-Version für Frontend und Backend; z. B. `1.5.0` oder `latest` | `latest` |
+| `WEBMAIL_VERSION` | Image-Version für Frontend und Backend; z. B. `1.5.1` oder `latest` | `latest` |
 | `WEBMAIL_PORT` | Freier Port auf dem Docker-Host für die Webmail | `8886` |
 | `WEBMAIL_DATA_DIR` | Optionaler Host-Datenordner statt des benannten Volumes; enthält Datenbank, Schlüssel und lokale Dateien | Docker-Volume `webmail_data` |
 | `FILES_MAX_UPLOAD_MB` | Maximale Größe einer einzelnen hochgeladenen Datei in MiB; unabhängig vom Office-Limit | `1024` (1 GiB) |
@@ -427,7 +431,7 @@ Die Demo verbindet sich mit keinem Mailserver und versendet keine Nachrichten.
 | Area | Features |
 |---|---|
 | 🔐 Sign-in | Email address and password or app password; automatic IMAP/SMTP discovery |
-| 📬 Mailbox | List view, bottom reading pane or right reading pane |
+| 📬 Mailbox | List view, bottom or right reading pane; page-sized fetching and separate background checks |
 | ↔️ Interface | Resizable folder sidebar, reading panes and columns |
 | 🌗 Appearance | Light and dark mode |
 | 🎨 Theme editor | Separate light/dark colors, four presets, local fonts and adjustable font size; live preview and reset |
@@ -442,6 +446,10 @@ Die Demo verbindet sich mit keinem Mailserver und versendet keine Nachrichten.
 | 📥 Import | Google/Outlook CSV, including contacts without email addresses |
 | 📤 Export | Contacts as CSV/vCard; messages as EML |
 | ⚙️ Settings | Language, appearance, identity, signature, special folders and notifications |
+
+### ⚡ Mail loading and diagnostics
+
+Unfiltered lists fetch only the requested page. Background checks use a separate connection. Disabling all-folder checks polls only INBOX; other counters update when opened. Errors remain visible with expandable details. See [PERFORMANCE.md](PERFORMANCE.md) for deadlines, large attachments and troubleshooting.
 
 ### 🧭 Choose your installation
 
@@ -507,7 +515,7 @@ Use webmail images containing the ONLYOFFICE integration (**v1.4.0 or later**). 
 3. Set these values in `.env` or the Portainer stack's **Environment variables**:
 
 ```dotenv
-WEBMAIL_VERSION=1.5.0
+WEBMAIL_VERSION=1.5.1
 WEBMAIL_PORT=8886
 ONLYOFFICE_URL=https://office.example.com
 ONLYOFFICE_JWT_SECRET=REPLACE_WITH_YOUR_GENERATED_KEY
@@ -550,7 +558,7 @@ For Docker Compose, save [`.env.example`](.env.example) as `.env` next to the ch
 | Variable | Purpose | Default |
 |---|---|---|
 | `DOCKERHUB_NAMESPACE` | Namespace of the provided webmail images; normally leave unchanged | `paquele` |
-| `WEBMAIL_VERSION` | Image version for frontend and backend, such as `1.5.0` or `latest` | `latest` |
+| `WEBMAIL_VERSION` | Image version for frontend and backend, such as `1.5.1` or `latest` | `latest` |
 | `WEBMAIL_PORT` | Available Docker host port for webmail | `8886` |
 | `WEBMAIL_DATA_DIR` | Optional host data directory instead of the named volume; holds the database, key and local files | Docker volume `webmail_data` |
 | `FILES_MAX_UPLOAD_MB` | Maximum size of one uploaded file in MiB; independent of the Office limit | `1024` (1 GiB) |

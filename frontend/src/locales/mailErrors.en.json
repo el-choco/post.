@@ -1,0 +1,8 @@
+{
+  "apiInvalidResponse": "The server returned an invalid response. Please retry. Details can help diagnose the problem.",
+  "apiUnavailable": "The backend is currently unavailable. Please retry.",
+  "apiTimeout": "The request took too long. Please retry.",
+  "mailTimeout": "The mail request took too long. The connection was released. Please retry.",
+  "mailConnection": "The connection to the mail server was interrupted. Please retry.",
+  "errorDetails": "Show error details"
+}

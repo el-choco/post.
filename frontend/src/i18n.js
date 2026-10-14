@@ -12,12 +12,15 @@ import officeDe from "./locales/office.de.json";
 import officeEn from "./locales/office.en.json";
 import themeDe from "./locales/theme.de.json";
 import themeEn from "./locales/theme.en.json";
+import mailErrorsDe from "./locales/mailErrors.de.json";
+import mailErrorsEn from "./locales/mailErrors.en.json";
 i18n.use(initReactI18next).init({
   resources: {
     de: {
       translation: {
         ...de,
         ...featuresDe,
+        ...mailErrorsDe,
         calendar: calendarDe,
         files: filesDe,
         office: officeDe,
@@ -28,6 +31,7 @@ i18n.use(initReactI18next).init({
       translation: {
         ...en,
         ...featuresEn,
+        ...mailErrorsEn,
         calendar: calendarEn,
         files: filesEn,
         office: officeEn,

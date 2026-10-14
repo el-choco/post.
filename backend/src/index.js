@@ -10,6 +10,8 @@ const { encrypt, decrypt, sha256 } = require("./crypto");
 const { resolveAccount } = require("./autodiscover");
 const { withImap, listFolders, findSpecial, groupItems } = require("./imap");
 const { cached, invalidate } = require("./cache");
+const { fetchRows, messagePage, folderState } = require("./mailList");
+const mailState = require("./mailState");
 const {
   readSettings,
   normalizeSettings,
@@ -24,7 +26,34 @@ app.get("/api/health", (req, res) =>
 app.set("trust proxy", true);
 app.use(express.json({ limit: "40mb" }));
 app.use("/api", (req, res, next) => {
+  const started = Date.now();
+  const route = req.originalUrl.split("?")[0];
+  req.requestId = crypto.randomUUID();
+  res.setHeader("X-Request-ID", req.requestId);
+  const controller = new AbortController();
+  req.imapSignal = controller.signal;
+  res.once("close", () => {
+    if (!res.writableEnded) controller.abort();
+  });
   res.on("finish", () => {
+    const durationMs = Date.now() - started;
+    if (
+      durationMs >= 3000 &&
+      /^\/api\/(messages|message|folders|poll|search|attachment|source)(\/|$)/.test(
+        route,
+      )
+    ) {
+      console.info(
+        JSON.stringify({
+          event: "slow_mail_api",
+          requestId: req.requestId,
+          method: req.method,
+          route,
+          status: res.statusCode,
+          durationMs,
+        }),
+      );
+    }
     if (
       req.account &&
       req.method !== "GET" &&
@@ -42,8 +71,6 @@ const SELF_SIGNED = process.env.ALLOW_SELF_SIGNED === "true";
 
 const wrap = (fn) => (req, res, next) =>
   Promise.resolve(fn(req, res, next)).catch(next);
-
-                                                                        
 
 const failedLogins = new Map();
 
@@ -204,8 +231,6 @@ app.get("/api/me", auth, (req, res) => {
   res.json({ email: a.email, imapHost: a.imap_host, smtpHost: a.smtp_host });
 });
 
-                                                                          
-
 app.get("/api/settings", auth, (req, res) =>
   res.json(readSettings(req.account)),
 );
@@ -226,7 +251,6 @@ app.put(
   }),
 );
 
-                                                                           
 app.post("/api/refresh", auth, (req, res) => {
   invalidate(req.account.id);
   res.json({ success: true });
@@ -237,38 +261,40 @@ app.get(
   auth,
   wrap(async (req, res) => {
     const settings = readSettings(req.account);
-    const data = await withImap(req.account, async (c) => {
-      const folders = await listFolders(c),
-        states = [],
-        skippedFolders = [];
-      for (const folder of folders.filter(
-        (f) =>
-          f.selectable !== false &&
-          !["\\All", "\\Flagged"].includes(f.specialUse) &&
-          (settings.checkAllFolders || f.path === "INBOX"),
-      )) {
-        try {
-          const status = await c.status(folder.path, {
-            messages: true,
-            unseen: true,
-            uidNext: true,
-            uidValidity: true,
-          });
-          states.push({
-            folder: folder.path,
-            total: status.messages,
-            unseen: status.unseen,
-            uidNext: status.uidNext,
-            uidValidity: String(status.uidValidity),
-          });
-        } catch {
-          skippedFolders.push(folder.path);
+    const data = await withImap(
+      req.account,
+      async (c) => {
+        const folders = settings.checkAllFolders
+            ? await listFolders(c)
+            : [{ path: "INBOX", selectable: true }],
+          states = [],
+          skippedFolders = [];
+        for (const folder of folders.filter(
+          (f) =>
+            f.selectable !== false &&
+            !["\\All", "\\Flagged"].includes(f.specialUse) &&
+            (settings.checkAllFolders || f.path === "INBOX"),
+        )) {
+          try {
+            const status = await c.status(folder.path, {
+              messages: true,
+              unseen: true,
+              uidNext: true,
+              uidValidity: true,
+              highestModseq: true,
+            });
+            states.push(folderState(folder.path, status));
+          } catch {
+            skippedFolders.push(folder.path);
+          }
         }
-      }
-      return { states, skippedFolders };
-    });
-    invalidate(req.account.id);
-    res.json(data);
+        return { states, skippedFolders };
+      },
+      { background: true, signal: req.imapSignal },
+    );
+    const changed = mailState.update(req.account.id, data.states);
+    if (changed) invalidate(req.account.id);
+    res.json({ ...data, changed });
   }),
 );
 
@@ -313,9 +339,7 @@ app.put(
     let mailboxSaved = false;
     try {
       mailboxSaved = await syncMailboxDraft(req.account, draft);
-    } catch {
-                                                                   
-    }
+    } catch {}
     res.json({ success: true, mailboxSaved });
   }),
 );
@@ -333,10 +357,10 @@ app.get(
   "/api/folders",
   auth,
   wrap(async (req, res) => {
-    const folders = await cached(req.account.id, "folders", 15000, () =>
-      withImap(req.account, (c) => listFolders(c, true)),
+    const folders = await cached(req.account.id, "folders", 120000, () =>
+      withImap(req.account, (c) => listFolders(c), { background: true }),
     );
-    res.json(folders);
+    res.json(mailState.folders(req.account.id, folders));
   }),
 );
 
@@ -374,9 +398,7 @@ app.post(
       await c.mailboxCreate(path);
       try {
         await c.mailboxSubscribe(path);
-      } catch {
-                    
-      }
+      } catch {}
       return { path, name, delimiter, selectable: true, unseen: 0, total: 0 };
     });
     res.json(result);
@@ -457,52 +479,6 @@ app.delete(
   }),
 );
 
-                                                                            
-
-function hasAttachment(node) {
-  if (!node) return false;
-  if (node.disposition && node.disposition.toLowerCase() === "attachment")
-    return true;
-  return (node.childNodes || []).some(hasAttachment);
-}
-
-function toRow(m, folder) {
-  const from = (m.envelope && m.envelope.from && m.envelope.from[0]) || {};
-  const to = (m.envelope && m.envelope.to && m.envelope.to[0]) || {};
-  return {
-    folder,
-    uid: m.uid,
-    from: { name: from.name || "", address: from.address || "" },
-    to: { name: to.name || "", address: to.address || "" },
-    subject: (m.envelope && m.envelope.subject) || "",
-    date: (m.envelope && m.envelope.date) || m.internalDate || null,
-    size: m.size || 0,
-    seen: m.flags ? m.flags.has("\\Seen") : false,
-    flagged: m.flags ? m.flags.has("\\Flagged") : false,
-    attachment: hasAttachment(m.bodyStructure),
-  };
-}
-
-const FETCH_FIELDS = {
-  uid: true,
-  envelope: true,
-  flags: true,
-  size: true,
-  bodyStructure: true,
-  internalDate: true,
-};
-
-async function fetchRows(client, folder, uids) {
-  const rows = [];
-  if (!uids.length) return rows;
-  for await (const m of client.fetch(uids, FETCH_FIELDS, { uid: true }))
-    rows.push(toRow(m, folder));
-  rows.sort(
-    (a, b) => new Date(b.date || 0) - new Date(a.date || 0) || b.uid - a.uid,
-  );
-  return rows;
-}
-
 app.get(
   "/api/messages",
   auth,
@@ -519,30 +495,22 @@ app.get(
     const data = await cached(
       req.account.id,
       JSON.stringify(["messages", folder, page, pageSize, filter, hideDeleted]),
-      10000,
+      45000,
       () =>
-        withImap(req.account, async (c) => {
-          const lock = await c.getMailboxLock(folder);
-          try {
-            const query =
-              filter === "unread"
-                ? { seen: false }
-                : filter === "read"
-                  ? { seen: true }
-                  : { all: true };
-            if (hideDeleted) query.deleted = false;
-            const uids = ((await c.search(query, { uid: true })) || []).sort(
-              (a, b) => b - a,
-            );
-            const slice = uids.slice((page - 1) * pageSize, page * pageSize);
-            return {
-              total: uids.length,
-              messages: await fetchRows(c, folder, slice),
-            };
-          } finally {
-            lock.release();
-          }
-        }),
+        withImap(
+          req.account,
+          async (c) => {
+            const result = await messagePage(c, folder, {
+              page,
+              pageSize,
+              filter,
+              hideDeleted,
+            });
+            mailState.update(req.account.id, [result.folderStatus]);
+            return result;
+          },
+          { read: true },
+        ),
     );
     res.json(data);
   }),
@@ -667,24 +635,28 @@ app.get(
       settings.externalImages === "always" ||
       (settings.externalImages !== "never" && req.query.images === "1");
 
-    const raw = await withImap(req.account, async (c) => {
-      const r = await readSource(c, folder, uid);
-      if (
-        r &&
-        settings.markReadDelay === 0 &&
-        req.query.peek !== "1" &&
-        !r.flags.has("\\Seen")
-      ) {
-        const lock = await c.getMailboxLock(folder);
-        try {
-          await c.messageFlagsAdd(String(uid), ["\\Seen"], { uid: true });
-          invalidate(req.account.id);
-        } finally {
-          lock.release();
+    const raw = await withImap(
+      req.account,
+      async (c) => {
+        const r = await readSource(c, folder, uid);
+        if (
+          r &&
+          settings.markReadDelay === 0 &&
+          req.query.peek !== "1" &&
+          !r.flags.has("\\Seen")
+        ) {
+          const lock = await c.getMailboxLock(folder);
+          try {
+            await c.messageFlagsAdd(String(uid), ["\\Seen"], { uid: true });
+            invalidate(req.account.id);
+          } finally {
+            lock.release();
+          }
         }
-      }
-      return r;
-    });
+        return r;
+      },
+      { read: true, signal: req.imapSignal },
+    );
     if (!raw) return res.status(404).json({ error: "Message not found" });
 
     const parsed = await simpleParser(raw.source);
@@ -778,8 +750,6 @@ app.get(
     res.send(raw.source);
   }),
 );
-
-                                                            
 
 async function forEachFolder(req, fn) {
   const groups = groupItems(req.body.items);
@@ -921,7 +891,6 @@ app.post(
         .status(400)
         .json({ error: "No spam folder found", code: "no_junk" });
     await forEachFolder(req, async (c, folder, uids) => {
-                                                                         
       const dest = folder === junk.path ? "INBOX" : junk.path;
       await c.messageMove(uids, dest, { uid: true });
     });
@@ -929,7 +898,6 @@ app.post(
   }),
 );
 
-                                                                            
 app.get(
   "/api/search",
   auth,
@@ -957,49 +925,55 @@ app.get(
       JSON.stringify(["search-index", field, q, hideDeleted]),
       45000,
       () =>
-        withImap(req.account, async (c) => {
-          const folders = (await listFolders(c)).filter(
-            (f) =>
-              f.selectable !== false &&
-              !["\\All", "\\Flagged"].includes(f.specialUse),
-          );
-          const hits = [],
-            skippedFolders = [];
-          for (const folder of folders) {
-            try {
-              const lock = await c.getMailboxLock(folder.path, {
-                readOnly: true,
-              });
+        withImap(
+          req.account,
+          async (c) => {
+            const folders = (await listFolders(c)).filter(
+              (f) =>
+                f.selectable !== false &&
+                !["\\All", "\\Flagged"].includes(f.specialUse),
+            );
+            const hits = [],
+              skippedFolders = [];
+            for (const folder of folders) {
               try {
-                const uids = (await c.search(query, { uid: true })) || [];
-                if (uids.length)
-                  for await (const message of c.fetch(
-                    uids,
-                    { uid: true, envelope: true, internalDate: true },
-                    { uid: true },
-                  )) {
-                    hits.push({
-                      folder: folder.path,
-                      uid: message.uid,
-                      date:
-                        message.envelope?.date || message.internalDate || null,
-                    });
-                  }
-              } finally {
-                lock.release();
+                const lock = await c.getMailboxLock(folder.path, {
+                  readOnly: true,
+                });
+                try {
+                  const uids = (await c.search(query, { uid: true })) || [];
+                  if (uids.length)
+                    for await (const message of c.fetch(
+                      uids,
+                      { uid: true, envelope: true, internalDate: true },
+                      { uid: true },
+                    )) {
+                      hits.push({
+                        folder: folder.path,
+                        uid: message.uid,
+                        date:
+                          message.envelope?.date ||
+                          message.internalDate ||
+                          null,
+                      });
+                    }
+                } finally {
+                  lock.release();
+                }
+              } catch {
+                skippedFolders.push(folder.path);
               }
-            } catch {
-              skippedFolders.push(folder.path);
             }
-          }
-          hits.sort(
-            (a, b) =>
-              new Date(b.date || 0) - new Date(a.date || 0) ||
-              a.folder.localeCompare(b.folder) ||
-              b.uid - a.uid,
-          );
-          return { hits, skippedFolders };
-        }),
+            hits.sort(
+              (a, b) =>
+                new Date(b.date || 0) - new Date(a.date || 0) ||
+                a.folder.localeCompare(b.folder) ||
+                b.uid - a.uid,
+            );
+            return { hits, skippedFolders };
+          },
+          { background: true },
+        ),
     );
     const slice = index.hits.slice((page - 1) * pageSize, page * pageSize);
     const messages = await cached(
@@ -1007,25 +981,29 @@ app.get(
       JSON.stringify(["search-page", field, q, page, pageSize, hideDeleted]),
       10000,
       () =>
-        withImap(req.account, async (c) => {
-          const rows = [];
-          for (const [folder, uids] of groupItems(slice)) {
-            const lock = await c.getMailboxLock(folder, { readOnly: true });
-            try {
-              rows.push(...(await fetchRows(c, folder, uids)));
-            } finally {
-              lock.release();
+        withImap(
+          req.account,
+          async (c) => {
+            const rows = [];
+            for (const [folder, uids] of groupItems(slice)) {
+              const lock = await c.getMailboxLock(folder, { readOnly: true });
+              try {
+                rows.push(...(await fetchRows(c, folder, uids)));
+              } finally {
+                lock.release();
+              }
             }
-          }
-          const positions = new Map(
-            slice.map((hit, i) => [JSON.stringify([hit.folder, hit.uid]), i]),
-          );
-          return rows.sort(
-            (a, b) =>
-              positions.get(JSON.stringify([a.folder, a.uid])) -
-              positions.get(JSON.stringify([b.folder, b.uid])),
-          );
-        }),
+            const positions = new Map(
+              slice.map((hit, i) => [JSON.stringify([hit.folder, hit.uid]), i]),
+            );
+            return rows.sort(
+              (a, b) =>
+                positions.get(JSON.stringify([a.folder, a.uid])) -
+                positions.get(JSON.stringify([b.folder, b.uid])),
+            );
+          },
+          { read: true },
+        ),
     );
     res.json({
       total: index.hits.length,
@@ -1034,8 +1012,6 @@ app.get(
     });
   }),
 );
-
-                                                                            
 
 const isMail = (s) => /^[^@\s,;<>]+@[^@\s,;<>]+\.[^@\s,;<>]+$/.test(s);
 const cleanList = (v) =>
@@ -1096,7 +1072,7 @@ async function syncMailboxDraft(account, draft) {
       saved.uidValidity ||
         (await c.status(folder.path, { uidValidity: true })).uidValidity,
     );
-                                                                                           
+
     if (previous) await deleteDraftReference(c, previous);
     await run(
       "INSERT INTO draft_refs(account_id,folder,uid,uid_validity,marker) VALUES(?,?,?,?,?) ON CONFLICT(account_id) DO UPDATE SET folder=excluded.folder,uid=excluded.uid,uid_validity=excluded.uid_validity,marker=excluded.marker",
@@ -1236,7 +1212,6 @@ app.post(
       transport.close();
     }
 
-                                                                                    
     if (
       !/gmail|googlemail/i.test(acc.imap_host) ||
       settings.sentFolder ||
@@ -1253,9 +1228,7 @@ app.post(
           const target = replyFolder || sent;
           if (target) await c.append(target.path, raw, ["\\Seen"]);
         });
-      } catch {
-                                                    
-      }
+      } catch {}
     }
     try {
       if (settings.collectRecipientsBook)
@@ -1264,9 +1237,7 @@ app.post(
           settings.collectRecipientsBook,
           recipients.map((address) => ({ address })),
         );
-    } catch {
-                                                                            
-    }
+    } catch {}
     await removeMailboxDraft(acc).catch(() => {});
     await run("DELETE FROM local_drafts WHERE account_id=?", [acc.id]).catch(
       () => {},
@@ -1275,29 +1246,67 @@ app.post(
   }),
 );
 
-                                                                            
 app.use("/api", require("./contacts").createContactsRouter(auth, wrap));
-app.use("/api/calendar", require("./calendar").createCalendarRouter(auth, wrap));
+app.use(
+  "/api/calendar",
+  require("./calendar").createCalendarRouter(auth, wrap),
+);
 app.use("/api/files", require("./files").createFilesRouter(auth, wrap));
 app.use("/api/office", require("./office").createOfficeRouter(auth, wrap));
-
-                                                                            
 
 app.use("/api", (req, res) => res.status(404).json({ error: "Not found" }));
 
 app.use((err, req, res, next) => {
+  if (err.code === "IMAP_CANCELLED" && res.destroyed) return;
   if (!err.status || err.status >= 500) console.error(err);
   if (res.headersSent) return next(err);
+  const mailRoute =
+    /^\/api\/(messages|message|folders|poll|search|attachment|source)(\/|$)/.test(
+      req.originalUrl.split("?")[0],
+    );
+  const timedOut =
+    err.code === "IMAP_TIMEOUT" ||
+    (mailRoute && ["ETIMEDOUT", "ETIMEOUT"].includes(err.code));
+  const disconnected =
+    mailRoute &&
+    [
+      "ECONNRESET",
+      "ECONNREFUSED",
+      "ENOTFOUND",
+      "EAI_AGAIN",
+      "ENETUNREACH",
+      "ConnectionClosed",
+      "NoConnection",
+    ].includes(err.code);
   res
-    .status(err.status || 500)
-    .json({ error: err.responseText || err.message || "Server error" });
+    .status(timedOut ? 504 : disconnected ? 502 : err.status || 500)
+    .json({
+      error: timedOut
+        ? "mailTimeout"
+        : disconnected
+          ? "mailConnection"
+          : err.responseText || err.message || "Server error",
+      requestId: req.requestId,
+    });
 });
 
 if (require.main === module) {
   init()
     .then(() => {
-      setInterval(() => require("./filesStorage").cleanup().catch(() => {}), 15 * 60000).unref();
-      setInterval(() => require("./office").cleanup().catch(() => {}), 15 * 60000).unref();
+      setInterval(
+        () =>
+          require("./filesStorage")
+            .cleanup()
+            .catch(() => {}),
+        15 * 60000,
+      ).unref();
+      setInterval(
+        () =>
+          require("./office")
+            .cleanup()
+            .catch(() => {}),
+        15 * 60000,
+      ).unref();
       return app.listen(PORT, process.env.HOST || "0.0.0.0", () =>
         console.log(`Backend server running on port ${PORT}`),
       );

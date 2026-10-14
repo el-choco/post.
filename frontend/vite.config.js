@@ -9,6 +9,11 @@ const { version } = JSON.parse(
 const sourceHash = createHash("sha256");
 for (const file of [
   "src/pages/Mailbox.jsx",
+  "src/api.js",
+  "src/lib/apiResponse.js",
+  "src/components/MailError.jsx",
+  "src/locales/mailErrors.de.json",
+  "src/locales/mailErrors.en.json",
   "src/components/MessageBody.jsx",
   "src/components/MessageAttachments.jsx",
   "src/components/SettingsPage.jsx",

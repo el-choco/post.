@@ -69,6 +69,8 @@ import {
 import { desktopNotification, playSound } from "../lib/notifications";
 import MessageBody from "../components/MessageBody";
 import MessageAttachments from "../components/MessageAttachments";
+import MailError from "../components/MailError";
+import { mailStatesChanged } from "../lib/apiResponse.js";
 import WindowFrame from "../components/WindowFrame";
 const CalendarPage = lazy(() => import("../components/CalendarPage"));
 const FilesPage = lazy(() => import("../components/FilesPage"));
@@ -127,6 +129,8 @@ export default function Mailbox() {
   const [loading, setLoading] = useState(true);
   const [reading, setReading] = useState(false);
   const [error, setError] = useState("");
+  const [errorInfo, setErrorInfo] = useState(null);
+  const [readerRefresh, setReaderRefresh] = useState(0);
   const [notice, setNotice] = useState("");
   const [query, setQuery] = useState("");
   const [search, setSearch] = useState("");
@@ -159,6 +163,7 @@ export default function Mailbox() {
   const dragColumn = useRef(null);
   const detailRef = useRef(null);
   const readKeys = useRef(new Set());
+  const listUpdatedAt = useRef(0);
   const navigateSection = useCallback(
     (next) => {
       setMenu("");
@@ -167,10 +172,16 @@ export default function Mailbox() {
     },
     [setViewParams],
   );
-  const showError = useCallback(
-    (e) => setError(i18n.t(e.message || "error")),
-    [],
-  );
+  const showError = useCallback((e) => {
+    if (e.name === "AbortError") return;
+    setError(i18n.t(e.message || "error"));
+    setErrorInfo({
+      at: Date.now(),
+      status: e.status,
+      requestId: e.requestId,
+      endpoint: e.endpoint,
+    });
+  }, []);
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
@@ -238,7 +249,6 @@ export default function Mailbox() {
     const controller = new AbortController();
     async function load() {
       setLoading(true);
-      setError("");
       const key = JSON.stringify([
         folder,
         page,
@@ -288,6 +298,19 @@ export default function Mailbox() {
           return;
         }
         setMessages(data.messages);
+        listUpdatedAt.current = Date.now();
+        if (data.folderStatus)
+          setFolders((rows) =>
+            rows.map((row) =>
+              row.path === data.folderStatus.folder
+                ? {
+                    ...row,
+                    total: data.folderStatus.total,
+                    unseen: data.folderStatus.unseen,
+                  }
+                : row,
+            ),
+          );
         setTotal(data.total || 0);
         if (nextAfter.current) {
           const target =
@@ -387,7 +410,7 @@ export default function Mailbox() {
     }
     load();
     return () => controller.abort();
-  }, [active, user, images, settings.externalImages, showError]);
+  }, [active, user, images, settings.externalImages, showError, readerRefresh]);
   useEffect(() => {
     if (
       !active ||
@@ -439,14 +462,16 @@ export default function Mailbox() {
   ]);
   useEffect(() => {
     if (!ready || user?.demo || !settings.refreshInterval) return;
+    const controller = new AbortController();
     let stopped = false,
       running = false;
     const poll = async () => {
       if (running) return;
       running = true;
       try {
-        const data = await api("/poll");
+        const data = await api("/poll", { signal: controller.signal });
         if (stopped) return;
+        const changed = mailStatesChanged(pollState.current, data.states);
         let count = 0;
         for (const state of data.states) {
           const before = pollState.current?.get(state.folder);
@@ -481,17 +506,27 @@ export default function Mailbox() {
         }
         if (data.skippedFolders.length && settings.browserNotifications)
           setNotice(t("pollPartial"));
-        setRefresh((value) => value + 1);
+        if (
+          changed ||
+          (data.states.some((state) => !state.highestModseq) &&
+            Date.now() - listUpdatedAt.current >= 120000)
+        )
+          setRefresh((value) => value + 1);
       } catch (e) {
         if (!stopped) showError(e);
       } finally {
         running = false;
       }
     };
-    poll();
+    const first = setTimeout(
+      poll,
+      Math.min(10000, settings.refreshInterval * 1000),
+    );
     const timer = setInterval(poll, settings.refreshInterval * 1000);
     return () => {
       stopped = true;
+      controller.abort();
+      clearTimeout(first);
       clearInterval(timer);
     };
   }, [
@@ -678,7 +713,6 @@ export default function Mailbox() {
     if (action === "delete" && permanent && !confirm(t("permanentDelete")))
       return;
     setBusy(true);
-    setError("");
     setMenu("");
     try {
       await post(`/messages/${action}`, {
@@ -1380,6 +1414,20 @@ export default function Mailbox() {
         </div>
       </header>
       {user.demo && <div className="demo-banner">{t("demoHint")}</div>}
+      {error && (
+        <MailError
+          message={error}
+          info={errorInfo}
+          onRetry={() => {
+            setRefresh((value) => value + 1);
+            setReaderRefresh((value) => value + 1);
+          }}
+          onClose={() => {
+            setError("");
+            setErrorInfo(null);
+          }}
+        />
+      )}
       <div className="workspace" hidden={section !== "mail"}>
         <PanelGroup direction="horizontal" autoSaveId="post-sidebar">
           <Panel id="sidebar" defaultSize={18} minSize={12} maxSize={35}>
@@ -1654,20 +1702,6 @@ export default function Mailbox() {
                   <LoaderCircle size={14} className="spinner" />
                   <span>{t("searching")}</span>
                   <span className="search-beam" />
-                </div>
-              )}
-              {error && (
-                <div className="notice error" role="alert">
-                  {error}
-                  <button
-                    className="text-button"
-                    onClick={() => setRefresh((value) => value + 1)}
-                  >
-                    {t("retry")}
-                  </button>
-                  <button className="icon-button" onClick={() => setError("")}>
-                    <X size={15} />
-                  </button>
                 </div>
               )}
               {notice && (

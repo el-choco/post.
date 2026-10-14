@@ -1,18 +1,42 @@
 const crypto = require("node:crypto");
 
-                                                                                       
-function createImapPool(makeClient, idleMs = 90000) {
+function createImapPool(makeClient, idleMs = 90000, limits = {}) {
   const slots = new Map();
+  const foregroundMs = limits.foregroundMs ?? 30000;
+  const backgroundMs = limits.backgroundMs ?? 60000;
+  const closeMs = limits.closeMs ?? 750;
+  function failure(code) {
+    const error = new Error(
+      code === "IMAP_TIMEOUT" ? "mailTimeout" : "Request cancelled",
+    );
+    error.code = code;
+    error.status = code === "IMAP_TIMEOUT" ? 504 : 499;
+    return error;
+  }
+  function forceClose(client) {
+    try {
+      client?.close();
+    } catch {}
+  }
   async function close(client) {
     if (!client) return;
+    if (!client.usable) return forceClose(client);
+    let timer;
     try {
-      await client.logout();
+      await Promise.race([
+        Promise.resolve().then(() => client.logout()),
+        new Promise((resolve) => {
+          timer = setTimeout(resolve, closeMs);
+        }),
+      ]);
     } catch {
-      client.close();
+    } finally {
+      clearTimeout(timer);
+      forceClose(client);
     }
   }
-  async function withImap(account, fn) {
-    const key = account.id;
+  async function withImap(account, fn, options = {}) {
+    const key = `${account.id}:${options.background ? "background" : "foreground"}`;
     let slot = slots.get(key);
     if (!slot) {
       slot = { queue: Promise.resolve(), pending: 0 };
@@ -20,6 +44,12 @@ function createImapPool(makeClient, idleMs = 90000) {
     }
     clearTimeout(slot.timer);
     slot.pending++;
+    const budget = options.background
+      ? backgroundMs
+      : options.read
+        ? foregroundMs
+        : 0;
+    const deadline = budget ? Date.now() + budget : Infinity;
     const fingerprint = crypto
       .createHash("sha256")
       .update(
@@ -32,16 +62,63 @@ function createImapPool(makeClient, idleMs = 90000) {
         ]),
       )
       .digest("hex");
+    let client,
+      active = false,
+      cancelled = false,
+      rejectCancelled;
+    const cancelledPromise = new Promise((resolve, reject) => {
+      rejectCancelled = reject;
+    });
+    const cancel = (code) => {
+      if (cancelled) return;
+      cancelled = failure(code);
+      if (active) {
+        if (slot.client === client) slot.client = null;
+        forceClose(client);
+      }
+      rejectCancelled(cancelled);
+    };
+    const abort = () => cancel("IMAP_CANCELLED");
+    const timeout = budget
+      ? setTimeout(
+          () => cancel("IMAP_TIMEOUT"),
+          Math.max(1, deadline - Date.now()),
+        )
+      : null;
+    options.signal?.addEventListener("abort", abort, { once: true });
+    if (options.signal?.aborted) abort();
     const work = slot.queue.then(async () => {
       try {
-        if (!slot.client?.usable || slot.fingerprint !== fingerprint) {
-          await close(slot.client);
-          slot.client = makeClient(account);
-          slot.fingerprint = fingerprint;
-          await slot.client.connect();
+        if (cancelled) throw cancelled;
+        active = true;
+        const operation = (async () => {
+          client = slot.client;
+          if (!client?.usable || slot.fingerprint !== fingerprint) {
+            slot.client = null;
+            await close(client);
+            if (cancelled) throw cancelled;
+            client = makeClient(account);
+            slot.client = client;
+            slot.fingerprint = fingerprint;
+            await client.connect();
+          }
+          if (cancelled) {
+            forceClose(client);
+            throw cancelled;
+          }
+          return fn(client);
+        })();
+        return await Promise.race([operation, cancelledPromise]);
+      } catch (error) {
+        if (active && slot.client === client) {
+          slot.client = null;
+          forceClose(client);
         }
-        return await fn(slot.client);
+        throw error;
       } finally {
+        active = false;
+        clearTimeout(timeout);
+        options.signal?.removeEventListener("abort", abort);
         slot.pending--;
         if (!slot.pending) {
           slot.timer = setTimeout(() => {
@@ -54,7 +131,7 @@ function createImapPool(makeClient, idleMs = 90000) {
       }
     });
     slot.queue = work.catch(() => {});
-    return work;
+    return Promise.race([work, cancelledPromise]);
   }
   async function closeAll() {
     const active = [...slots.values()];

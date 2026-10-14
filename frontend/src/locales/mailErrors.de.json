@@ -1,0 +1,8 @@
+{
+  "apiInvalidResponse": "Der Server hat keine gültige Antwort geliefert. Bitte erneut versuchen. Details helfen bei der Fehlersuche.",
+  "apiUnavailable": "Das Backend ist gerade nicht erreichbar. Bitte erneut versuchen.",
+  "apiTimeout": "Die Anfrage hat zu lange gedauert. Bitte erneut versuchen.",
+  "mailTimeout": "Der Mailabruf hat zu lange gedauert. Die Verbindung wurde freigegeben. Bitte erneut versuchen.",
+  "mailConnection": "Die Verbindung zum Mailserver wurde unterbrochen. Bitte erneut versuchen.",
+  "errorDetails": "Fehlerdetails anzeigen"
+}
