@@ -1,0 +1,40 @@
+{
+  "title": "Diagnose",
+  "open": "Diagnose öffnen",
+  "subtitle": "Dem Mailabruf auf der Spur",
+  "description": "Hier siehst du Ladezeiten und Fehler deines Postfachs. Klappe einen Eintrag auf, um die einzelnen Schritte zu prüfen.",
+  "retention": "Maximal {{max}} Einträge pro Postfach, automatisch nach {{days}} Tagen bereinigt. Ohne Passwörter, Tokens, Mail-Inhalte, Betreffzeilen, Suchbegriffe oder Ordnernamen. Die Aufzeichnung beginnt mit diesem Update.",
+  "demo": "In der Demo werden keine echten Verbindungen protokolliert.",
+  "filter": "Anzeigen",
+  "filters": {
+    "all": "Alle Abrufe",
+    "errors": "Nur Fehler",
+    "slow": "Ab 3 Sekunden"
+  },
+  "download": "Protokoll herunterladen",
+  "empty": "Noch keine passenden Einträge. Öffne dein Postfach und aktualisiere anschließend das Protokoll.",
+  "levels": { "info": "Info", "warning": "Langsam", "error": "Fehler" },
+  "sources": { "backend": "Server", "browser": "Browser" },
+  "noResponse": "Keine Antwort",
+  "requestId": "Anfrage-ID",
+  "code": "Fehlercode",
+  "version": "Webmail-Version",
+  "stagesHint": "Einzelne Schritte können ineinander liegen. Ihre Zeiten deshalb nicht addieren.",
+  "active": "Beim Ende der Anfrage noch aktiv",
+  "noStages": "Keine einzelnen IMAP-Schritte erfasst – etwa bei einer Antwort aus dem Cache oder einer Browser-/Proxy-Störung.",
+  "count": "{{shown}} von {{total}} passenden Einträgen. Der Download enthält alle gespeicherten Einträge dieses Postfachs.",
+  "phases": {
+    "cache_wait": "Warten auf einen bereits laufenden Abruf",
+    "queue": "Verbindungswarteschlange",
+    "disconnect": "Alte Verbindung schließen",
+    "connect": "Mit dem Mailserver verbinden und anmelden",
+    "operation": "Gesamter IMAP-Auftrag",
+    "list": "Ordnerstruktur abrufen",
+    "mailbox_lock": "Ordner öffnen / auf Ordnerfreigabe warten",
+    "status": "Ordnerstatus abfragen",
+    "search": "Nachrichten suchen",
+    "fetch": "Mail-Liste abrufen",
+    "source_fetch": "Mail mit Anhängen abrufen",
+    "parse": "Mail-Inhalt aufbereiten"
+  }
+}

@@ -22,6 +22,161 @@
 .theme-editor {
   max-width: 900px;
 }
+.diagnostics-panel {
+  max-width: 1100px;
+}
+.diagnostics-intro {
+  display: flex;
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-soft);
+}
+.diagnostics-intro > svg {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.diagnostics-intro p {
+  color: var(--muted);
+  line-height: 1.7;
+  margin: 8px 0 0;
+}
+.diagnostics-controls {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 22px 0 14px;
+}
+.settings-fields .diagnostics-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-right: auto;
+  margin-bottom: 0;
+  min-width: 180px;
+}
+.diagnostics-controls select {
+  min-width: 180px;
+}
+.diagnostics-retention {
+  font-size: calc(12px * var(--ui-font-scale));
+  line-height: 1.8;
+}
+.diagnostic-entry {
+  margin: 10px 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.diagnostic-entry > summary {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 16px;
+  list-style: none;
+}
+.diagnostic-entry > summary::-webkit-details-marker {
+  display: none;
+}
+.diagnostic-entry > summary::after {
+  content: "+";
+  color: var(--muted);
+}
+.diagnostic-entry[open] > summary::after {
+  content: "−";
+}
+.diagnostic-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 85px;
+  color: var(--muted);
+  font-size: calc(12px * var(--ui-font-scale));
+}
+.diagnostic-warning .diagnostic-status {
+  color: #966a16;
+}
+.diagnostic-error .diagnostic-status {
+  color: #bd504f;
+}
+.dark .diagnostic-warning .diagnostic-status {
+  color: #efc57b;
+}
+.dark .diagnostic-error .diagnostic-status {
+  color: #efb1af;
+}
+.diagnostic-route {
+  flex: 1;
+  min-width: 150px;
+  overflow-wrap: anywhere;
+  font-size: calc(13px * var(--ui-font-scale));
+}
+.diagnostic-route small {
+  display: block;
+  color: var(--muted);
+  margin-top: 5px;
+  font-size: calc(11px * var(--ui-font-scale));
+}
+.diagnostic-http {
+  color: var(--muted);
+  min-width: 70px;
+  font-size: calc(11px * var(--ui-font-scale));
+}
+.diagnostic-details {
+  padding: 16px;
+  border-top: 1px solid var(--line);
+  font-size: calc(12px * var(--ui-font-scale));
+}
+.diagnostic-details dl {
+  margin: 0;
+}
+.diagnostic-details dl > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.diagnostic-details dt {
+  min-width: 110px;
+  color: var(--muted);
+}
+.diagnostic-details dd {
+  margin: 0;
+  user-select: text;
+  overflow-wrap: anywhere;
+}
+.diagnostic-stages {
+  padding: 0;
+  margin: 12px 0 0;
+  list-style: none;
+}
+.diagnostic-stages li {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+.diagnostic-stages small {
+  display: block;
+  color: var(--muted);
+  margin-top: 5px;
+}
+.diagnostic-stages strong {
+  white-space: nowrap;
+}
+.diagnostics-empty {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 24px 0;
+  color: var(--muted);
+}
 .mail-error-banner.notice {
   flex-shrink: 0;
   display: flex;

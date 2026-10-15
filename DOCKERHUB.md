@@ -1,6 +1,6 @@
 # 🐳 post. auf Docker Hub veröffentlichen
 
-Version 1.5.1 verbessert den Mailabruf und die Fehleranzeige (siehe PERFORMANCE.md). Seit Version 1.5.0 gibt es den Theme-Editor für Farben, Schriftart und Schriftgröße. Seit Version 1.4.0 gibt es die optionale ONLYOFFICE-Anbindung (siehe ONLYOFFICE.md). Seit Version 1.3.0 gibt es den Dateimanager mit verschlüsseltem privatem Speicher, Google Drive und OneDrive. Die Dateieinrichtung steht in FILES.md. Die Anbieter-Konfiguration steht in [CALENDAR.md](CALENDAR.md).
+Version 1.5.2 ergänzt das Diagnoseprotokoll in den Einstellungen. Seit Version 1.5.1 gibt es Verbesserungen am Mailabruf und der Fehleranzeige (siehe PERFORMANCE.md). Seit Version 1.5.0 gibt es den Theme-Editor für Farben, Schriftart und Schriftgröße. Seit Version 1.4.0 gibt es die optionale ONLYOFFICE-Anbindung (siehe ONLYOFFICE.md). Seit Version 1.3.0 gibt es den Dateimanager mit verschlüsseltem privatem Speicher, Google Drive und OneDrive. Die Dateieinrichtung steht in FILES.md. Die Anbieter-Konfiguration steht in [CALENDAR.md](CALENDAR.md).
 
 Die Anwendung verwendet zwei Images:
 
@@ -23,14 +23,14 @@ Bei der Passwortabfrage einen Docker-Hub-Zugriffstoken mit Schreibberechtigung v
 
 ## 🏗️ 2. Images bauen und veröffentlichen
 
-Die Compose-Datei verwendet standardmäßig `latest`. Für eine nachvollziehbare Veröffentlichung beide Images ausdrücklich als Version `1.5.1` und `latest` bauen:
+Die Compose-Datei verwendet standardmäßig `latest`. Für eine nachvollziehbare Veröffentlichung beide Images ausdrücklich als Version `1.5.2` und `latest` bauen:
 
 ```sh
-docker build --pull -t paquele/post-webmail-frontend:1.5.1 -t paquele/post-webmail-frontend:latest ./frontend
-docker build --pull -t paquele/post-webmail-backend:1.5.1 -t paquele/post-webmail-backend:latest ./backend
+docker build --pull -t paquele/post-webmail-frontend:1.5.2 -t paquele/post-webmail-frontend:latest ./frontend
+docker build --pull -t paquele/post-webmail-backend:1.5.2 -t paquele/post-webmail-backend:latest ./backend
 
-docker push paquele/post-webmail-frontend:1.5.1
-docker push paquele/post-webmail-backend:1.5.1
+docker push paquele/post-webmail-frontend:1.5.2
+docker push paquele/post-webmail-backend:1.5.2
 docker push paquele/post-webmail-frontend:latest
 docker push paquele/post-webmail-backend:latest
 ```
@@ -39,16 +39,16 @@ Damit werden beide Images für die Architektur der verwendeten Docker-Engine geb
 
 ### 🏷️ Zusätzlich als `latest` veröffentlichen
 
-Nach erfolgreichem Build und Upload von `1.5.1`:
+Nach erfolgreichem Build und Upload von `1.5.2`:
 
 ```sh
-docker tag paquele/post-webmail-frontend:1.5.1 paquele/post-webmail-frontend:latest
-docker tag paquele/post-webmail-backend:1.5.1 paquele/post-webmail-backend:latest
+docker tag paquele/post-webmail-frontend:1.5.2 paquele/post-webmail-frontend:latest
+docker tag paquele/post-webmail-backend:1.5.2 paquele/post-webmail-backend:latest
 docker push paquele/post-webmail-frontend:latest
 docker push paquele/post-webmail-backend:latest
 ```
 
-Versions-Tags für spätere Updates erhöhen, beispielsweise auf `1.5.2`. `latest` kann anschließend auf die neue Version zeigen. Ein veröffentlichtes Versions-Tag möglichst nicht nachträglich ersetzen.
+Versions-Tags für spätere Updates erhöhen, beispielsweise auf `1.5.3`. `latest` kann anschließend auf die neue Version zeigen. Ein veröffentlichtes Versions-Tag möglichst nicht nachträglich ersetzen.
 
 ## 🌍 Optional: AMD64 und ARM64 gemeinsam veröffentlichen
 
@@ -70,8 +70,8 @@ docker buildx inspect --bootstrap
 Beide Images mit Versions- und `latest`-Tag bauen und direkt hochladen:
 
 ```sh
-docker buildx build --pull --platform linux/amd64,linux/arm64 --tag paquele/post-webmail-frontend:1.5.1 --tag paquele/post-webmail-frontend:latest --push ./frontend
-docker buildx build --pull --platform linux/amd64,linux/arm64 --tag paquele/post-webmail-backend:1.5.1 --tag paquele/post-webmail-backend:latest --push ./backend
+docker buildx build --pull --platform linux/amd64,linux/arm64 --tag paquele/post-webmail-frontend:1.5.2 --tag paquele/post-webmail-frontend:latest --push ./frontend
+docker buildx build --pull --platform linux/amd64,linux/arm64 --tag paquele/post-webmail-backend:1.5.2 --tag paquele/post-webmail-backend:latest --push ./backend
 ```
 
 Die Images werden direkt in die Registry geschrieben und müssen anschließend zum lokalen Start gepullt werden. Mit dieser Variante ist der separate `docker tag`/`docker push`-Schritt nicht nötig.
@@ -84,7 +84,7 @@ Beispiel für die `.env`:
 
 ```dotenv
 DOCKERHUB_NAMESPACE=paquele
-WEBMAIL_VERSION=1.5.1
+WEBMAIL_VERSION=1.5.2
 WEBMAIL_PORT=8886
 # Nur setzen, wenn du bereits dieses Datenverzeichnis verwendest:
 # WEBMAIL_DATA_DIR=/mnt/seagate/webmail/data
@@ -106,7 +106,7 @@ Die Webmail ist unter `http://SERVER-IP:8886` erreichbar. Für Internetzugriff H
 Nach Veröffentlichung einer neuen Version `WEBMAIL_VERSION` in der Server-`.env` anpassen:
 
 ```dotenv
-WEBMAIL_VERSION=1.5.2
+WEBMAIL_VERSION=1.5.3
 ```
 
 Danach:
@@ -121,8 +121,8 @@ Die Container werden bei geänderten Images ersetzt; das konfigurierte Datenvolu
 ## 🔍 Kontrolle und Protokolle
 
 ```sh
-docker buildx imagetools inspect paquele/post-webmail-frontend:1.5.1
-docker buildx imagetools inspect paquele/post-webmail-backend:1.5.1
+docker buildx imagetools inspect paquele/post-webmail-frontend:1.5.2
+docker buildx imagetools inspect paquele/post-webmail-backend:1.5.2
 docker compose logs --tail=100
 ```
 

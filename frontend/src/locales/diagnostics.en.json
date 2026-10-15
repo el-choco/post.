@@ -1,0 +1,40 @@
+{
+  "title": "Diagnostics",
+  "open": "Open diagnostics",
+  "subtitle": "Understand mail loading",
+  "description": "Review loading times and errors for your mailbox. Expand an entry to inspect individual steps.",
+  "retention": "Up to {{max}} entries per mailbox, automatically cleaned up after {{days}} days. No passwords, tokens, mail contents, subjects, search terms or folder names. Recording starts with this update.",
+  "demo": "The demo does not log real connections.",
+  "filter": "Show",
+  "filters": {
+    "all": "All requests",
+    "errors": "Errors only",
+    "slow": "3 seconds or more"
+  },
+  "download": "Download log",
+  "empty": "No matching entries yet. Open your mailbox, then refresh the log.",
+  "levels": { "info": "Info", "warning": "Slow", "error": "Error" },
+  "sources": { "backend": "Server", "browser": "Browser" },
+  "noResponse": "No response",
+  "requestId": "Request ID",
+  "code": "Error code",
+  "version": "Webmail version",
+  "stagesHint": "Steps may be nested, so their durations should not be added together.",
+  "active": "Still active when the request ended",
+  "noStages": "No individual IMAP steps recorded, for example on a cache hit or a browser/proxy failure.",
+  "count": "{{shown}} of {{total}} matching entries. The download contains all stored entries for this mailbox.",
+  "phases": {
+    "cache_wait": "Waiting for an existing request",
+    "queue": "Connection queue",
+    "disconnect": "Closing old connection",
+    "connect": "Connecting and signing in to mail server",
+    "operation": "Complete IMAP operation",
+    "list": "Loading folder tree",
+    "mailbox_lock": "Opening folder / waiting for folder lock",
+    "status": "Checking folder status",
+    "search": "Searching messages",
+    "fetch": "Fetching mail list",
+    "source_fetch": "Fetching message and attachments",
+    "parse": "Processing message content"
+  }
+}

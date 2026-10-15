@@ -1,11 +1,13 @@
-                                                                 
+const { measure } = require("./diagnosticsTrace");
 function createCache(maxEntries = 100) {
   const entries = new Map();
   async function cached(accountId, key, ttl, read) {
     const cacheKey = JSON.stringify([accountId, key]);
     const existing = entries.get(cacheKey);
     if (existing && (existing.pending || existing.until > Date.now()))
-      return existing.value;
+      return existing.pending
+        ? measure("cache_wait", () => existing.value)
+        : existing.value;
     if (entries.size >= maxEntries) entries.delete(entries.keys().next().value);
     const entry = { accountId, pending: true, until: 0 };
     entry.value = Promise.resolve()

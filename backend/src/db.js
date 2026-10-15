@@ -109,6 +109,7 @@ async function init() {
   await require('./calendar').initCalendar();
   await require('./filesStorage').initFiles();
   await require('./office').initOffice();
+  await require('./diagnostics').initDiagnostics();
 }
 
                                                                                      

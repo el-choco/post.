@@ -1,6 +1,11 @@
 import { useStore } from "./store.js";
 import { readApiResponse } from "./lib/apiResponse.js";
+import {
+  diagnosticFailure,
+  reportDiagnosticFailure,
+} from "./lib/diagnosticsClient.js";
 export async function api(path, options = {}) {
+  const started = Date.now();
   const token = useStore.getState().user?.token;
   const mail =
     (!options.method || options.method.toUpperCase() === "GET") &&
@@ -42,6 +47,16 @@ export async function api(path, options = {}) {
           ? new Error("apiUnavailable")
           : cause;
     error.endpoint = path.split("?")[0];
+    if (
+      mail &&
+      !options.signal?.aborted &&
+      error.message !== "sessionExpired"
+    ) {
+      void reportDiagnosticFailure(
+        diagnosticFailure(path, error, Date.now() - started),
+        token,
+      );
+    }
     throw error;
   } finally {
     clearTimeout(timer);

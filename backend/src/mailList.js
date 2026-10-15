@@ -1,3 +1,4 @@
+const { measure } = require("./diagnosticsTrace");
 function hasAttachment(node) {
   if (!node) return false;
   if (node.disposition && node.disposition.toLowerCase() === "attachment")
@@ -30,28 +31,34 @@ const fields = {
 };
 async function fetchRows(client, folder, range, uid = true) {
   if (Array.isArray(range) && !range.length) return [];
-  const rows = [];
-  for await (const message of client.fetch(range, fields, { uid }))
-    rows.push(toRow(message, folder));
-  return rows.sort(
-    (a, b) => new Date(b.date || 0) - new Date(a.date || 0) || b.uid - a.uid,
-  );
+  return measure("fetch", async () => {
+    const rows = [];
+    for await (const message of client.fetch(range, fields, { uid }))
+      rows.push(toRow(message, folder));
+    return rows.sort(
+      (a, b) => new Date(b.date || 0) - new Date(a.date || 0) || b.uid - a.uid,
+    );
+  });
 }
 async function messagePage(
   client,
   folder,
   { page, pageSize, filter, hideDeleted },
 ) {
-  const lock = await client.getMailboxLock(folder, { readOnly: true });
+  const lock = await measure("mailbox_lock", () =>
+    client.getMailboxLock(folder, { readOnly: true }),
+  );
   try {
     const readStatus = () =>
-      client.status(folder, {
-        messages: true,
-        unseen: true,
-        uidNext: true,
-        uidValidity: true,
-        highestModseq: true,
-      });
+      measure("status", () =>
+        client.status(folder, {
+          messages: true,
+          unseen: true,
+          uidNext: true,
+          uidValidity: true,
+          highestModseq: true,
+        }),
+      );
     let status = await readStatus();
     let total, messages;
     if (!hideDeleted && !["read", "unread"].includes(filter)) {
@@ -88,9 +95,10 @@ async function messagePage(
             ? { seen: true }
             : { all: true };
       if (hideDeleted) query.deleted = false;
-      const uids = ((await client.search(query, { uid: true })) || []).sort(
-        (a, b) => b - a,
-      );
+      const uids = (
+        (await measure("search", () => client.search(query, { uid: true }))) ||
+        []
+      ).sort((a, b) => b - a);
       total = uids.length;
       messages = await fetchRows(
         client,

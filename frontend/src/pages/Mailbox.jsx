@@ -1416,6 +1416,9 @@ export default function Mailbox() {
       {user.demo && <div className="demo-banner">{t("demoHint")}</div>}
       {error && (
         <MailError
+          onDiagnostics={() =>
+            setViewParams({ view: "settings", settingsTab: "diagnostics" })
+          }
           message={error}
           info={errorInfo}
           onRetry={() => {
@@ -1765,6 +1768,8 @@ export default function Mailbox() {
         <div className="workspace">
           {ready ? (
             <SettingsPage
+              key={viewParams.get("settingsTab") || "interface"}
+              initialTab={viewParams.get("settingsTab") || "interface"}
               initial={settings}
               folders={folders}
               onSaved={saveSettings}

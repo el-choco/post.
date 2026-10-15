@@ -1,5 +1,6 @@
 const { ImapFlow } = require("imapflow");
 const { createImapPool } = require("./imapPool");
+const { measure } = require("./diagnosticsTrace");
 
 const SELF_SIGNED = process.env.ALLOW_SELF_SIGNED === "true";
 
@@ -22,7 +23,6 @@ function makeClient(acc) {
 
 const { withImap, closeAll } = createImapPool(makeClient);
 
-                                                                        
 const NAME_HINTS = {
   "\\Sent": [
     "sent",
@@ -61,11 +61,13 @@ function detectSpecial(entry) {
 async function listFolders(client, withStatus = false) {
   let list;
   try {
-    list = await client.list(
-      withStatus ? { statusQuery: { messages: true, unseen: true } } : {},
+    list = await measure("list", () =>
+      client.list(
+        withStatus ? { statusQuery: { messages: true, unseen: true } } : {},
+      ),
     );
   } catch {
-    list = await client.list();
+    list = await measure("list", () => client.list());
   }
   return list
     .filter((f) => !(f.flags && f.flags.has("\\NonExistent")))
@@ -82,7 +84,6 @@ async function listFolders(client, withStatus = false) {
 
 const findSpecial = (folders, use) => folders.find((f) => f.specialUse === use);
 
-                                                       
 function groupItems(items) {
   const map = new Map();
   for (const it of Array.isArray(items) ? items : []) {

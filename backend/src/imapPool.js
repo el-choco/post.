@@ -1,4 +1,5 @@
 const crypto = require("node:crypto");
+const { currentTrace, measure } = require("./diagnosticsTrace");
 
 function createImapPool(makeClient, idleMs = 90000, limits = {}) {
   const slots = new Map();
@@ -36,6 +37,8 @@ function createImapPool(makeClient, idleMs = 90000, limits = {}) {
     }
   }
   async function withImap(account, fn, options = {}) {
+    const trace = currentTrace();
+    const finishQueue = trace?.start("queue");
     const key = `${account.id}:${options.background ? "background" : "foreground"}`;
     let slot = slots.get(key);
     if (!slot) {
@@ -71,6 +74,7 @@ function createImapPool(makeClient, idleMs = 90000, limits = {}) {
     });
     const cancel = (code) => {
       if (cancelled) return;
+      finishQueue?.();
       cancelled = failure(code);
       if (active) {
         if (slot.client === client) slot.client = null;
@@ -90,23 +94,24 @@ function createImapPool(makeClient, idleMs = 90000, limits = {}) {
     const work = slot.queue.then(async () => {
       try {
         if (cancelled) throw cancelled;
+        finishQueue?.();
         active = true;
         const operation = (async () => {
           client = slot.client;
           if (!client?.usable || slot.fingerprint !== fingerprint) {
             slot.client = null;
-            await close(client);
+            await measure("disconnect", () => close(client), trace);
             if (cancelled) throw cancelled;
             client = makeClient(account);
             slot.client = client;
             slot.fingerprint = fingerprint;
-            await client.connect();
+            await measure("connect", () => client.connect(), trace);
           }
           if (cancelled) {
             forceClose(client);
             throw cancelled;
           }
-          return fn(client);
+          return measure("operation", () => fn(client), trace);
         })();
         return await Promise.race([operation, cancelledPromise]);
       } catch (error) {
@@ -116,6 +121,7 @@ function createImapPool(makeClient, idleMs = 90000, limits = {}) {
         }
         throw error;
       } finally {
+        finishQueue?.();
         active = false;
         clearTimeout(timeout);
         options.signal?.removeEventListener("abort", abort);

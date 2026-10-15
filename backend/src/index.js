@@ -12,6 +12,8 @@ const { withImap, listFolders, findSpecial, groupItems } = require("./imap");
 const { cached, invalidate } = require("./cache");
 const { fetchRows, messagePage, folderState } = require("./mailList");
 const mailState = require("./mailState");
+const diagnostics = require("./diagnostics");
+const { createTrace, runTrace, measure } = require("./diagnosticsTrace");
 const {
   readSettings,
   normalizeSettings,
@@ -28,14 +30,43 @@ app.use(express.json({ limit: "40mb" }));
 app.use("/api", (req, res, next) => {
   const started = Date.now();
   const route = req.originalUrl.split("?")[0];
+  req.diagnosticTrace = createTrace();
   req.requestId = crypto.randomUUID();
   res.setHeader("X-Request-ID", req.requestId);
   const controller = new AbortController();
   req.imapSignal = controller.signal;
+  let recorded = false;
+  const record = (status, code) => {
+    if (
+      recorded ||
+      !req.account ||
+      req.method !== "GET" ||
+      !diagnostics.routes.has(route)
+    )
+      return;
+    recorded = true;
+    void diagnostics.record(req.account.id, {
+      route,
+      status,
+      source: "backend",
+      requestId: req.requestId,
+      durationMs: Date.now() - started,
+      errorCode: code || req.diagnosticTrace.errorCode,
+      stages: req.diagnosticTrace.snapshot(),
+    });
+  };
   res.once("close", () => {
-    if (!res.writableEnded) controller.abort();
+    if (!res.writableEnded) {
+      record(499, "CLIENT_ABORT");
+      controller.abort();
+    }
   });
   res.on("finish", () => {
+    record(
+      res.statusCode,
+      req.diagnosticTrace.errorCode ||
+        (res.statusCode >= 400 ? "HTTP_ERROR" : ""),
+    );
     const durationMs = Date.now() - started;
     if (
       durationMs >= 3000 &&
@@ -62,7 +93,7 @@ app.use("/api", (req, res, next) => {
     )
       invalidate(req.account.id);
   });
-  next();
+  runTrace(req.diagnosticTrace, next);
 });
 
 const PORT = process.env.PORT || 3000;
@@ -276,13 +307,15 @@ app.get(
             (settings.checkAllFolders || f.path === "INBOX"),
         )) {
           try {
-            const status = await c.status(folder.path, {
-              messages: true,
-              unseen: true,
-              uidNext: true,
-              uidValidity: true,
-              highestModseq: true,
-            });
+            const status = await measure("status", () =>
+              c.status(folder.path, {
+                messages: true,
+                unseen: true,
+                uidNext: true,
+                uidValidity: true,
+                highestModseq: true,
+              }),
+            );
             states.push(folderState(folder.path, status));
           } catch {
             skippedFolders.push(folder.path);
@@ -610,12 +643,10 @@ const receiptTarget = (parsed) => {
 };
 
 async function readSource(c, folder, uid) {
-  const lock = await c.getMailboxLock(folder);
+  const lock = await measure("mailbox_lock", () => c.getMailboxLock(folder));
   try {
-    const msg = await c.fetchOne(
-      String(uid),
-      { source: true, flags: true },
-      { uid: true },
+    const msg = await measure("source_fetch", () =>
+      c.fetchOne(String(uid), { source: true, flags: true }, { uid: true }),
     );
     if (!msg) return null;
     return { source: msg.source, flags: msg.flags };
@@ -659,7 +690,7 @@ app.get(
     );
     if (!raw) return res.status(404).json({ error: "Message not found" });
 
-    const parsed = await simpleParser(raw.source);
+    const parsed = await measure("parse", () => simpleParser(raw.source));
     const cidMap = {};
     for (const a of parsed.attachments) {
       if (a.cid && /^image\//i.test(a.contentType)) {
@@ -1253,10 +1284,13 @@ app.use(
 );
 app.use("/api/files", require("./files").createFilesRouter(auth, wrap));
 app.use("/api/office", require("./office").createOfficeRouter(auth, wrap));
+app.use("/api/diagnostics", diagnostics.createDiagnosticsRouter(auth, wrap));
 
 app.use("/api", (req, res) => res.status(404).json({ error: "Not found" }));
 
 app.use((err, req, res, next) => {
+  if (req.diagnosticTrace)
+    req.diagnosticTrace.errorCode = diagnostics.errorCode(err);
   if (err.code === "IMAP_CANCELLED" && res.destroyed) return;
   if (!err.status || err.status >= 500) console.error(err);
   if (res.headersSent) return next(err);
@@ -1278,21 +1312,20 @@ app.use((err, req, res, next) => {
       "ConnectionClosed",
       "NoConnection",
     ].includes(err.code);
-  res
-    .status(timedOut ? 504 : disconnected ? 502 : err.status || 500)
-    .json({
-      error: timedOut
-        ? "mailTimeout"
-        : disconnected
-          ? "mailConnection"
-          : err.responseText || err.message || "Server error",
-      requestId: req.requestId,
-    });
+  res.status(timedOut ? 504 : disconnected ? 502 : err.status || 500).json({
+    error: timedOut
+      ? "mailTimeout"
+      : disconnected
+        ? "mailConnection"
+        : err.responseText || err.message || "Server error",
+    requestId: req.requestId,
+  });
 });
 
 if (require.main === module) {
   init()
     .then(() => {
+      setInterval(() => diagnostics.cleanup().catch(() => {}), 3600000).unref();
       setInterval(
         () =>
           require("./filesStorage")

@@ -12,6 +12,7 @@ import {
   Images,
   LoaderCircle,
   Palette,
+  Activity,
 } from "lucide-react";
 import { api, post } from "../api";
 import { useStore } from "../store";
@@ -19,6 +20,7 @@ import WorkspacePage from "./WorkspacePage";
 import defaults from "../lib/preferences.json";
 import { desktopNotification, playSound } from "../lib/notifications";
 import ThemeEditor from "./ThemeEditor";
+import Diagnostics from "./Diagnostics";
 import { normalizeAppearance } from "../lib/appearance";
 const sections = {
   interface: [
@@ -125,8 +127,15 @@ const icons = {
   server: Server,
   visibleFolders: Folder,
   identity: UserRound,
+  diagnostics: Activity,
 };
-export default function SettingsPage({ onClose, folders, initial, onSaved }) {
+export default function SettingsPage({
+  onClose,
+  folders,
+  initial,
+  onSaved,
+  initialTab = "interface",
+}) {
   const { t, i18n } = useTranslation();
   const { user, previewAppearance } = useStore();
   const [settings, setSettings] = useState({
@@ -134,7 +143,9 @@ export default function SettingsPage({ onClose, folders, initial, onSaved }) {
       ...initial,
       appearance: normalizeAppearance(initial?.appearance),
     }),
-    [tab, setTab] = useState("interface"),
+    [tab, setTab] = useState(
+      Object.hasOwn(icons, initialTab) ? initialTab : "interface",
+    ),
     [saving, setSaving] = useState(false),
     [error, setError] = useState(""),
     [books, setBooks] = useState([]),
@@ -210,6 +221,7 @@ export default function SettingsPage({ onClose, folders, initial, onSaved }) {
   };
   async function save(event) {
     event.preventDefault();
+    if (tab === "diagnostics") return;
     setSaving(true);
     setError("");
     try {
@@ -358,7 +370,9 @@ export default function SettingsPage({ onClose, folders, initial, onSaved }) {
                     ? key
                     : key === "theme"
                       ? "theme.title"
-                      : "prefs.tabs." + key,
+                      : key === "diagnostics"
+                        ? "diagnostics.title"
+                        : "prefs.tabs." + key,
                 )}
               </button>
             ))}
@@ -371,10 +385,13 @@ export default function SettingsPage({ onClose, folders, initial, onSaved }) {
                   ? tab
                   : tab === "theme"
                     ? "theme.title"
-                    : "prefs.tabs." + tab,
+                    : tab === "diagnostics"
+                      ? "diagnostics.title"
+                      : "prefs.tabs." + tab,
               )}
             </h3>
             {sections[tab]?.map(field)}
+            {tab === "diagnostics" && <Diagnostics />}
             {tab === "theme" && (
               <ThemeEditor
                 value={settings.appearance}
@@ -459,16 +476,18 @@ export default function SettingsPage({ onClose, folders, initial, onSaved }) {
         </div>
         <footer className="dialog-footer">
           <button type="button" className="secondary" onClick={onClose}>
-            {t("cancel")}
+            {t(tab === "diagnostics" ? "close" : "cancel")}
           </button>
-          <button className="primary" disabled={saving}>
-            {saving ? (
-              <LoaderCircle className="spinner" size={17} />
-            ) : (
-              <Check size={17} />
-            )}{" "}
-            {t(saving ? "saving" : "save")}
-          </button>
+          {tab !== "diagnostics" && (
+            <button className="primary" disabled={saving}>
+              {saving ? (
+                <LoaderCircle className="spinner" size={17} />
+              ) : (
+                <Check size={17} />
+              )}{" "}
+              {t(saving ? "saving" : "save")}
+            </button>
+          )}
         </footer>
       </form>
     </WorkspacePage>

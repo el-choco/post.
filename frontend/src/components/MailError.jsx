@@ -1,6 +1,12 @@
 import { useTranslation } from "react-i18next";
 import { X, RefreshCw, AlertCircle } from "lucide-react";
-export default function MailError({ message, info, onRetry, onClose }) {
+export default function MailError({
+  message,
+  info,
+  onRetry,
+  onClose,
+  onDiagnostics,
+}) {
   const { t } = useTranslation();
   return (
     <aside className="mail-error-banner notice error" role="alert">
@@ -23,6 +29,11 @@ export default function MailError({ message, info, onRetry, onClose }) {
           </details>
         )}
       </div>
+      {onDiagnostics && (
+        <button type="button" className="text-button" onClick={onDiagnostics}>
+          {t("diagnostics.open")}
+        </button>
+      )}
       <button type="button" className="text-button" onClick={onRetry}>
         <RefreshCw size={16} />
         {t("retry")}

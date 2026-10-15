@@ -131,6 +131,7 @@ before(async () => {
 });
 after(async () => {
   if (server) await new Promise((resolve) => server.close(resolve));
+  await require("../src/diagnostics").flush();
   imap.withImap = original;
   await new Promise((resolve) => db.db.close(resolve));
   fs.rmSync(temp, { recursive: true, force: true });

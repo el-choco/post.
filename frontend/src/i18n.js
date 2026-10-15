@@ -14,6 +14,8 @@ import themeDe from "./locales/theme.de.json";
 import themeEn from "./locales/theme.en.json";
 import mailErrorsDe from "./locales/mailErrors.de.json";
 import mailErrorsEn from "./locales/mailErrors.en.json";
+import diagnosticsDe from "./locales/diagnostics.de.json";
+import diagnosticsEn from "./locales/diagnostics.en.json";
 i18n.use(initReactI18next).init({
   resources: {
     de: {
@@ -25,6 +27,7 @@ i18n.use(initReactI18next).init({
         files: filesDe,
         office: officeDe,
         theme: themeDe,
+        diagnostics: diagnosticsDe,
       },
     },
     en: {
@@ -36,6 +39,7 @@ i18n.use(initReactI18next).init({
         files: filesEn,
         office: officeEn,
         theme: themeEn,
+        diagnostics: diagnosticsEn,
       },
     },
   },
