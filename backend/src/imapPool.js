@@ -102,10 +102,28 @@ function createImapPool(makeClient, idleMs = 90000, limits = {}) {
             slot.client = null;
             await measure("disconnect", () => close(client), trace);
             if (cancelled) throw cancelled;
-            client = makeClient(account);
+            const donorKey = `${account.id}:background`;
+            const donor =
+              !options.background && options.read && slots.get(donorKey);
+            const reused =
+              donor &&
+              !donor.pending &&
+              donor.client?.usable &&
+              donor.fingerprint === fingerprint;
+            if (reused) {
+              client = donor.client;
+              donor.client = null;
+              clearTimeout(donor.timer);
+              slots.delete(donorKey);
+              const finishReuse = trace?.start("reuse");
+              finishReuse?.();
+            } else {
+              client = makeClient(account);
+            }
             slot.client = client;
             slot.fingerprint = fingerprint;
-            await measure("connect", () => client.connect(), trace);
+            if (!reused)
+              await measure("connect", () => client.connect(), trace);
           }
           if (cancelled) {
             forceClose(client);

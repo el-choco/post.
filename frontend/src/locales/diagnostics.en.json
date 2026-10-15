@@ -24,6 +24,7 @@
   "noStages": "No individual IMAP steps recorded, for example on a cache hit or a browser/proxy failure.",
   "count": "{{shown}} of {{total}} matching entries. The download contains all stored entries for this mailbox.",
   "phases": {
+    "reuse": "Reusing an already connected idle connection",
     "cache_wait": "Waiting for an existing request",
     "queue": "Connection queue",
     "disconnect": "Closing old connection",

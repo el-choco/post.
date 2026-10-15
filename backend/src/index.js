@@ -529,7 +529,7 @@ app.get(
       req.account.id,
       JSON.stringify(["messages", folder, page, pageSize, filter, hideDeleted]),
       45000,
-      () =>
+      (signal) =>
         withImap(
           req.account,
           async (c) => {
@@ -542,8 +542,9 @@ app.get(
             mailState.update(req.account.id, [result.folderStatus]);
             return result;
           },
-          { read: true },
+          { read: true, signal },
         ),
+      { signal: req.imapSignal },
     );
     res.json(data);
   }),

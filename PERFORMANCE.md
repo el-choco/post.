@@ -1,6 +1,14 @@
-# ⚡ Mailabruf / Mail loading — 1.5.2
+# ⚡ Mailabruf / Mail loading — 1.5.3
 
 ## Deutsch
+
+### Verbindungen und Abbrüche ab 1.5.3
+
+Ein direkter IMAP-Leseauftrag kann eine bereits verbundene, unbenutzte Hintergrundverbindung desselben Postfachs übernehmen, wenn er sonst neu verbinden müsste. Zugangsdaten und Serverkonfiguration müssen unverändert übereinstimmen. Laufende oder wartende Hintergrundaufträge werden nicht übernommen. Die Verbindung erhält genau einen Besitzer; ein späterer Hintergrundauftrag verwendet eine getrennte Verbindung. In der Diagnose erscheint der Schritt „Bereits verbundene Leerlaufverbindung übernehmen“ (`reuse`). Das spart in diesem Fall einen neuen Verbindungs- und Anmeldevorgang.
+
+Gemeinsam gestartete Listenabrufe behalten ihre Verbindung, solange noch mindestens ein Browseraufruf darauf wartet. Verlässt der letzte Aufruf die Anfrage, wird der IMAP-Leseauftrag abgebrochen und aus dem laufenden Cache entfernt. Ein Folgeaufruf wartet dadurch nicht auf den Timeout des verlassenen Auftrags. Ein verspäteter Fehler dieses alten Auftrags darf einen neueren Cache-Eintrag nicht löschen. Gemeinsame Abrufe zwischen mehreren Tabs bleiben erhalten, wenn nur einer davon abbricht.
+
+Die bestehenden Zeitbudgets und die getrennte Ausführung aktiver Hintergrundarbeit bleiben bestehen. Schreibaktionen werden nicht automatisch wiederholt. Die Änderung vermeidet unnötige neue Verbindungen und behebt die Weitergabe eines alten Timeouts; sie beweist keine bestimmte DNS-, Netzwerk- oder Anbieterursache für einen hängenden Verbindungsaufbau. Die echte Verbesserung muss nach dem Update mit einem neuen Diagnoseprotokoll geprüft werden.
 
 ### Diagnoseprotokoll ab 1.5.2
 
@@ -38,6 +46,14 @@ docker logs --since=10m post-webmail-backend-1
 Für weitere Diagnose Fehlerdetails und passende Logzeile aufheben. Die Tests verwenden simulierte IMAP-Server und lokale API-Aufrufe; die tatsächliche Geschwindigkeit beim Anbieter muss nach dem Update auf dem eigenen Server geprüft werden.
 
 ## English
+
+### Connections and cancellation since 1.5.3
+
+Interactive IMAP reads can take ownership of an already connected, idle background connection for the same mailbox when a new connection would otherwise be necessary. Credentials and server configuration must match. Active or queued background operations are never transferred, and a connection always has a single owner. A later background request uses a separate connection. Diagnostics records the `reuse` phase when a transfer avoids reconnecting and signing in again.
+
+Shared list reads remain active while at least one caller is waiting. When the final caller disconnects, the underlying IMAP read is cancelled and removed from the pending cache. Subsequent requests therefore do not inherit that abandoned operation's timeout. Late failures cannot evict newer cache entries, and cancelling one browser tab does not cancel other waiting tabs.
+
+Existing read budgets and isolation of active background work remain in place. Writes are never automatically replayed. This change avoids unnecessary connections and fixes inherited timeouts; it does not identify a specific DNS, network or provider cause for a stalled connection. Verify the effect after deployment using a fresh diagnostic export.
 
 ### Diagnostic log since 1.5.2
 

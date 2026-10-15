@@ -24,6 +24,7 @@
   "noStages": "Keine einzelnen IMAP-Schritte erfasst – etwa bei einer Antwort aus dem Cache oder einer Browser-/Proxy-Störung.",
   "count": "{{shown}} von {{total}} passenden Einträgen. Der Download enthält alle gespeicherten Einträge dieses Postfachs.",
   "phases": {
+    "reuse": "Bereits verbundene Leerlaufverbindung übernehmen",
     "cache_wait": "Warten auf einen bereits laufenden Abruf",
     "queue": "Verbindungswarteschlange",
     "disconnect": "Alte Verbindung schließen",

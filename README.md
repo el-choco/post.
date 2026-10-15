@@ -36,6 +36,8 @@
 
 ### ⚡ Mailabruf und Fehlerdiagnose
 
+Ab Version 1.5.3 können direkte Mailabrufe eine freie Hintergrundverbindung desselben Postfachs übernehmen. Ein Listenabruf ohne wartende Browseraufrufe wird abgebrochen, damit der nächste Abruf keinen alten Timeout übernimmt. Bereits laufende Hintergrundaufträge und andere wartende Browseraufrufe bleiben getrennt geschützt.
+
 Unter **Einstellungen → Diagnose** findest du seit Version 1.5.2 Ladezeiten, Fehlercodes, Anfrage-IDs und die einzelnen Schritte des Mailabrufs. Mit **Protokoll herunterladen** kannst du die Einträge als JSON sichern. Pro Postfach werden bis zu 1000 Einträge für sieben Tage in der bestehenden SQLite-Datenbank aufbewahrt; die Aufzeichnung beginnt mit diesem Update. Passwörter, Tokens, Mail-Inhalte, Betreffzeilen, Suchbegriffe und Ordnernamen werden nicht aufgenommen. Es werden keine Daten automatisch an einen externen Diagnosedienst versendet.
 
 Die normale Mail-Liste lädt nur die benötigte Seite. Hintergrundprüfungen verwenden eine getrennte Verbindung. Bei ausgeschalteter Prüfung aller Ordner wird nur der Posteingang im Hintergrund geprüft; andere Ordnerzähler aktualisieren sich beim Öffnen. Fehler bleiben mit aufklappbaren Details sichtbar. Hinweise zu Zeitgrenzen, großen Anhängen und Diagnose: [PERFORMANCE.md](PERFORMANCE.md).
@@ -104,7 +106,7 @@ Die Webmail-Images müssen die ONLYOFFICE-Einbindung enthalten (**ab v1.4.0**). 
 3. Die folgenden Variablen in der `.env` bzw. unter **Environment variables** des Portainer-Stacks setzen:
 
 ```dotenv
-WEBMAIL_VERSION=1.5.2
+WEBMAIL_VERSION=1.5.3
 WEBMAIL_PORT=8886
 ONLYOFFICE_URL=https://office.example.com
 ONLYOFFICE_JWT_SECRET=HIER_DEN_ERZEUGTEN_SCHLUESSEL_EINTRAGEN
@@ -147,7 +149,7 @@ Für Docker Compose die [`.env.example`](.env.example) als `.env` neben der gew�
 | Variable | Bedeutung | Standard |
 |---|---|---|
 | `DOCKERHUB_NAMESPACE` | Namensraum der bereitgestellten Webmail-Images; normalerweise beibehalten | `paquele` |
-| `WEBMAIL_VERSION` | Image-Version für Frontend und Backend; z. B. `1.5.2` oder `latest` | `latest` |
+| `WEBMAIL_VERSION` | Image-Version für Frontend und Backend; z. B. `1.5.3` oder `latest` | `latest` |
 | `WEBMAIL_PORT` | Freier Port auf dem Docker-Host für die Webmail | `8886` |
 | `WEBMAIL_DATA_DIR` | Optionaler Host-Datenordner statt des benannten Volumes; enthält Datenbank, Schlüssel und lokale Dateien | Docker-Volume `webmail_data` |
 | `FILES_MAX_UPLOAD_MB` | Maximale Größe einer einzelnen hochgeladenen Datei in MiB; unabhängig vom Office-Limit | `1024` (1 GiB) |
@@ -453,6 +455,8 @@ Die Demo verbindet sich mit keinem Mailserver und versendet keine Nachrichten.
 
 ### ⚡ Mail loading and diagnostics
 
+Since version 1.5.3, interactive mail reads can take ownership of an idle background connection for the same mailbox. Abandoned list reads are cancelled when no callers remain, so later reads do not inherit an old timeout. Active background work and other waiting callers remain protected.
+
 Since version 1.5.2, **Settings → Diagnostics** shows request durations, error codes, request IDs and individual mail loading steps. **Download log** exports the entries as JSON. Up to 1000 entries per mailbox are retained for seven days in the existing SQLite database; recording starts with this update. Passwords, tokens, message contents, subjects, search terms and folder names are excluded. No data is automatically sent to an external diagnostic service.
 
 Unfiltered lists fetch only the requested page. Background checks use a separate connection. Disabling all-folder checks polls only INBOX; other counters update when opened. Errors remain visible with expandable details. See [PERFORMANCE.md](PERFORMANCE.md) for deadlines, large attachments and troubleshooting.
@@ -521,7 +525,7 @@ Use webmail images containing the ONLYOFFICE integration (**v1.4.0 or later**). 
 3. Set these values in `.env` or the Portainer stack's **Environment variables**:
 
 ```dotenv
-WEBMAIL_VERSION=1.5.2
+WEBMAIL_VERSION=1.5.3
 WEBMAIL_PORT=8886
 ONLYOFFICE_URL=https://office.example.com
 ONLYOFFICE_JWT_SECRET=REPLACE_WITH_YOUR_GENERATED_KEY
@@ -564,7 +568,7 @@ For Docker Compose, save [`.env.example`](.env.example) as `.env` next to the ch
 | Variable | Purpose | Default |
 |---|---|---|
 | `DOCKERHUB_NAMESPACE` | Namespace of the provided webmail images; normally leave unchanged | `paquele` |
-| `WEBMAIL_VERSION` | Image version for frontend and backend, such as `1.5.2` or `latest` | `latest` |
+| `WEBMAIL_VERSION` | Image version for frontend and backend, such as `1.5.3` or `latest` | `latest` |
 | `WEBMAIL_PORT` | Available Docker host port for webmail | `8886` |
 | `WEBMAIL_DATA_DIR` | Optional host data directory instead of the named volume; holds the database, key and local files | Docker volume `webmail_data` |
 | `FILES_MAX_UPLOAD_MB` | Maximum size of one uploaded file in MiB; independent of the Office limit | `1024` (1 GiB) |
