@@ -6,6 +6,8 @@ const phases = new Set([
   "queue",
   "disconnect",
   "connect",
+  "network",
+  "session",
   "reuse",
   "operation",
   "list",

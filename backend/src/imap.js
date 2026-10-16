@@ -1,6 +1,7 @@
 const { ImapFlow } = require("imapflow");
 const { createImapPool } = require("./imapPool");
 const { measure } = require("./diagnosticsTrace");
+const { SOCKET_TIMEOUT_MS } = require("./imapConnection");
 
 const SELF_SIGNED = process.env.ALLOW_SELF_SIGNED === "true";
 
@@ -15,7 +16,7 @@ function makeClient(acc) {
     tls: { rejectUnauthorized: !SELF_SIGNED },
     connectionTimeout: 15000,
     greetingTimeout: 10000,
-    socketTimeout: 120000,
+    socketTimeout: SOCKET_TIMEOUT_MS,
   });
   client.on("error", () => {});
   return client;
@@ -101,4 +102,11 @@ function groupItems(items) {
   return map;
 }
 
-module.exports = { withImap, listFolders, findSpecial, groupItems, closeAll };
+module.exports = {
+  withImap,
+  listFolders,
+  findSpecial,
+  groupItems,
+  closeAll,
+  makeClient,
+};

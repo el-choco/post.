@@ -121,6 +121,13 @@ test("diagnostics allow only fixed routes, phases, codes and UUIDs, dropping all
         folder: "private-folder",
       },
       { phase: "private-folder", durationMs: 30 },
+      { phase: "network", durationMs: 10, host: "private-host" },
+      {
+        phase: "session",
+        durationMs: 15,
+        user: "private-user",
+        password: "private-password",
+      },
     ],
   });
   const text = JSON.stringify(entry);
@@ -130,12 +137,14 @@ test("diagnostics allow only fixed routes, phases, codes and UUIDs, dropping all
     "private-query",
     "private-folder",
     "secret-token",
+    "private-host",
+    "private-user",
   ])
     assert.ok(!text.includes(secret));
   assert.equal(entry.durationMs, 0);
   assert.equal(entry.errorCode, "UNKNOWN_ERROR");
   assert.equal(entry.requestId, "");
-  assert.equal(entry.stages.length, 1);
+  assert.equal(entry.stages.length, 3);
   assert.equal(
     diagnostics.sanitize({ route: "/api/messages?folder=private-folder" }),
     null,

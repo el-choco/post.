@@ -29,6 +29,8 @@
     "queue": "Verbindungswarteschlange",
     "disconnect": "Alte Verbindung schließen",
     "connect": "Mit dem Mailserver verbinden und anmelden",
+    "network": "Netzwerkverbindung (bei direktem TLS einschließlich TLS)",
+    "session": "Serverbegrüßung, Anmeldung und Sitzungsvorbereitung",
     "operation": "Gesamter IMAP-Auftrag",
     "list": "Ordnerstruktur abrufen",
     "mailbox_lock": "Ordner öffnen / auf Ordnerfreigabe warten",

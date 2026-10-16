@@ -1,7 +1,8 @@
 const crypto = require("node:crypto");
 const { currentTrace, measure } = require("./diagnosticsTrace");
+const { connectImap, IDLE_CONNECTION_MS } = require("./imapConnection");
 
-function createImapPool(makeClient, idleMs = 90000, limits = {}) {
+function createImapPool(makeClient, idleMs = IDLE_CONNECTION_MS, limits = {}) {
   const slots = new Map();
   const foregroundMs = limits.foregroundMs ?? 30000;
   const backgroundMs = limits.backgroundMs ?? 60000;
@@ -123,7 +124,7 @@ function createImapPool(makeClient, idleMs = 90000, limits = {}) {
             slot.client = client;
             slot.fingerprint = fingerprint;
             if (!reused)
-              await measure("connect", () => client.connect(), trace);
+              await measure("connect", () => connectImap(client, trace), trace);
           }
           if (cancelled) {
             forceClose(client);

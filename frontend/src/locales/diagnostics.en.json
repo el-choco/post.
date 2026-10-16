@@ -29,6 +29,8 @@
     "queue": "Connection queue",
     "disconnect": "Closing old connection",
     "connect": "Connecting and signing in to mail server",
+    "network": "Network connection (including TLS for direct TLS)",
+    "session": "Server greeting, sign-in and session setup",
     "operation": "Complete IMAP operation",
     "list": "Loading folder tree",
     "mailbox_lock": "Opening folder / waiting for folder lock",
