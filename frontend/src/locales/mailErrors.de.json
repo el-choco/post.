@@ -1,4 +1,8 @@
 {
+  "messageUnavailable": "Diese Nachricht ist in diesem Ordner nicht mehr verfügbar.",
+  "messageMissingRefreshing": "Diese Nachricht ist in diesem Ordner nicht mehr verfügbar. Die Mail-Liste wird neu geladen.",
+  "messageMissingUpdated": "Diese Nachricht ist in diesem Ordner nicht mehr verfügbar. Die Mail-Liste wurde aktualisiert. Bitte wähle eine andere Nachricht.",
+  "messageMissingRefreshFailed": "Diese Nachricht ist in diesem Ordner nicht mehr verfügbar. Die Mail-Liste konnte noch nicht aktualisiert werden. Bitte versuche es erneut.",
   "apiInvalidResponse": "Der Server hat keine gültige Antwort geliefert. Bitte erneut versuchen. Details helfen bei der Fehlersuche.",
   "apiUnavailable": "Das Backend ist gerade nicht erreichbar. Bitte erneut versuchen.",
   "apiTimeout": "Die Anfrage hat zu lange gedauert. Bitte erneut versuchen.",

@@ -689,7 +689,15 @@ app.get(
       },
       { read: true, signal: req.imapSignal },
     );
-    if (!raw) return res.status(404).json({ error: "Message not found" });
+    if (!raw) {
+      invalidate(req.account.id);
+      req.diagnosticTrace.errorCode = "MESSAGE_NOT_FOUND";
+      return res.status(404).json({
+        error: "messageUnavailable",
+        code: "MESSAGE_NOT_FOUND",
+        requestId: req.requestId,
+      });
+    }
 
     const parsed = await measure("parse", () => simpleParser(raw.source));
     const cidMap = {};

@@ -11,6 +11,7 @@ for (const file of [
   "src/pages/Mailbox.jsx",
   "src/api.js",
   "src/lib/apiResponse.js",
+  "src/lib/messageRecovery.js",
   "src/components/MailError.jsx",
   "src/components/Diagnostics.jsx",
   "src/lib/diagnosticsClient.js",

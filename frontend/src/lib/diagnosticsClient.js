@@ -21,7 +21,14 @@ export function diagnosticFailure(path, error, durationMs) {
     route: "/api" + route,
     status: Number.isInteger(error?.status) ? error.status : 0,
     durationMs,
-    errorCode: errors.has(error?.message) ? error.message : "HTTP_ERROR",
+    errorCode:
+      route === "/message" &&
+      error?.status === 404 &&
+      error?.code === "MESSAGE_NOT_FOUND"
+        ? "MESSAGE_NOT_FOUND"
+        : errors.has(error?.message)
+          ? error.message
+          : "HTTP_ERROR",
     requestId: /^[a-f0-9-]{36}$/i.test(error?.requestId || "")
       ? error.requestId
       : "",

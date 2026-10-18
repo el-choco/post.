@@ -1,8 +1,8 @@
-# 📝 ONLYOFFICE in post. — 1.5.4
+# 📝 ONLYOFFICE in post. — 1.5.5
 
 ## Deutsch
 
-ONLYOFFICE ist optional. Die normale `docker-compose.yml` startet weiterhin nur Webmail und Backend. **`docker-compose.onlyoffice.yml` ist eine vollständige alternative Stack-Datei** mit zusätzlichem Dokumentserver; sie benötigt Frontend und Backend ab Version 1.4.0. Die folgenden Beispiele verwenden die aktuelle Version 1.5.4.
+ONLYOFFICE ist optional. Die normale `docker-compose.yml` startet weiterhin nur Webmail und Backend. **`docker-compose.onlyoffice.yml` ist eine vollständige alternative Stack-Datei** mit zusätzlichem Dokumentserver; sie benötigt Frontend und Backend ab Version 1.4.0. Die folgenden Beispiele verwenden die aktuelle Version 1.5.5.
 
 ### Was funktioniert?
 
@@ -16,7 +16,7 @@ ONLYOFFICE ist optional. Die normale `docker-compose.yml` startet weiterhin nur 
 
 ### 1. Dateien aktualisieren und Images veröffentlichen
 
-Den Inhalt von `post-webmail-1.5.4.zip` in den Server-Projektordner übertragen. Vorhandene `.env`, Datenvolume, Datenbank, gespeicherte Dateien und `secret.key` beibehalten. Build-/Push-Befehle stehen in [UPDATE-1.5.4.md](UPDATE-1.5.4.md).
+Den Inhalt von `post-webmail-1.5.5.zip` in den Server-Projektordner übertragen. Vorhandene `.env`, Datenvolume, Datenbank, gespeicherte Dateien und `secret.key` beibehalten. Build-/Push-Befehle stehen in [UPDATE-1.5.5.md](UPDATE-1.5.5.md).
 
 ### 2. Schlüssel erstellen
 
@@ -48,7 +48,7 @@ Die Webmail behält ihre bisherige Subdomain und ihren Port. Die Office-Subdomai
 **Den vorhandenen Webmail-Stack bearbeiten**, damit sein bestehendes Datenvolume erhalten bleibt. Im Editor die vollständige Datei `docker-compose.onlyoffice.yml` einsetzen. Bestehende Einstellungen für Port, Datenverzeichnis und OAuth beibehalten. Diese Environment variables ergänzen bzw. ändern:
 
 ```dotenv
-WEBMAIL_VERSION=1.5.4
+WEBMAIL_VERSION=1.5.5
 ONLYOFFICE_URL=https://office.deine-domain.de
 ONLYOFFICE_JWT_SECRET=DEIN_ZUVOR_ERSTELLTER_SCHLUESSEL
 ONLYOFFICE_PORT=8888
@@ -107,7 +107,7 @@ Lokale Dateien werden mit einer atomaren Prüfung des ursprünglichen Dateistand
 | Editor lädt nicht | Office-Subdomain, Zertifikat, NPM-Ziel/Port, Websockets, Dokumentserver-Logs |
 | Dokument kann nicht geladen werden | Backend-Netzwerkalias `backend`, gemeinsames Stack-Netzwerk, JWT-Schlüssel |
 | Speichern scheitert | Backend-Logs, Cloud-Berechtigungen, Quote, Wiederherstellungshinweis |
-| Image wird nicht aktualisiert | `WEBMAIL_VERSION=1.5.4` im Stack und beide Webmail-Images erneut herunterladen |
+| Image wird nicht aktualisiert | `WEBMAIL_VERSION=1.5.5` im Stack und beide Webmail-Images erneut herunterladen |
 
 ```bash
 docker logs --tail=80 post-webmail-onlyoffice-1
@@ -124,16 +124,16 @@ Automatisierte Prüfungen decken JWT, Zugriffsschutz, verschlüsselte Arbeitskop
 
 ## English
 
-ONLYOFFICE is optional. The regular Compose file runs webmail only. **`docker-compose.onlyoffice.yml` is a complete alternative stack**, adding the document server. Both webmail images must be version 1.4.0 or later. The following examples use the current version 1.5.4.
+ONLYOFFICE is optional. The regular Compose file runs webmail only. **`docker-compose.onlyoffice.yml` is a complete alternative stack**, adding the document server. Both webmail images must be version 1.4.0 or later. The following examples use the current version 1.5.5.
 
 PDF, DOCX, XLSX, PPTX, ODT, ODS, ODP and RTF can be viewed and edited. Images/text retain the existing preview. Legacy DOC/XLS/PPT and templates are view-only; use a modern Office copy to edit. Native Google documents remain with their provider. Normal uploaded Office files in Drive/OneDrive are supported; read-only permissions are preserved.
 
 ### Setup
 
-1. Upload the release files while preserving `.env`, your existing volume/database/files and `secret.key`. Build/push instructions: [UPDATE-1.5.4.md](UPDATE-1.5.4.md).
+1. Upload the release files while preserving `.env`, your existing volume/database/files and `secret.key`. Build/push instructions: [UPDATE-1.5.5.md](UPDATE-1.5.5.md).
 2. Generate a private secret with `openssl rand -hex 32`. Use the same `ONLYOFFICE_JWT_SECRET` for the backend and document server; the optional Compose file shares it automatically.
 3. In Nginx Proxy Manager, add an Office subdomain forwarding over HTTP to your server on port 8888. Enable Websockets and a valid HTTPS certificate/Force SSL.
-4. **Edit your existing Portainer stack**, replace its editor contents with `docker-compose.onlyoffice.yml`, preserve the existing port/storage/OAuth variables, and set the environment variables in the example above using your own domain and secret. Set `WEBMAIL_VERSION=1.5.4`. Update the stack and re-pull images.
+4. **Edit your existing Portainer stack**, replace its editor contents with `docker-compose.onlyoffice.yml`, preserve the existing port/storage/OAuth variables, and set the environment variables in the example above using your own domain and secret. Set `WEBMAIL_VERSION=1.5.5`. Update the stack and re-pull images.
 5. Alternatively, set these values in `.env` and use the Compose commands above with the existing project name. A Portainer-managed stack should be updated in Portainer.
 6. Reload with CTRL + F5, open a document under Files, choose Edit, make a small change, save/close, and reopen it to verify persistence. Check the provider too when editing a cloud file.
 

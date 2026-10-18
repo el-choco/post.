@@ -15,6 +15,7 @@ let server,
   revision = 1n,
   fetchCount = 0,
   listCount = 0,
+  missingLast = false,
   fail = false;
 const calls = [];
 const attachment = Buffer.from("%PDF test attachment");
@@ -42,7 +43,7 @@ const mime = Buffer.from(
 );
 function client(id) {
   return {
-    mailbox: { exists: 1000000 },
+    mailbox: { exists: missingLast ? 999999 : 1000000 },
     async list(options) {
       listCount++;
       assert.equal(options.statusQuery, undefined);
@@ -62,21 +63,30 @@ function client(id) {
     async status(folder) {
       assert.equal(folder, "INBOX");
       return {
-        messages: 1000000,
+        messages: missingLast ? 999999 : 1000000,
         unseen: 5,
         uidNext: 1000001,
         uidValidity: 1n,
         highestModseq: revision,
       };
     },
-    async search() {
-      throw new Error("Unfiltered list must not issue SEARCH ALL");
+    async search(query) {
+      assert.equal(query.subject, "recovery-test");
+      return missingLast ? [999999] : [999999, 1000000];
     },
     async *fetch(range, fields, options) {
       fetchCount++;
-      assert.equal(options.uid, false);
-      assert.equal(range, "999976:1000000");
-      for (let uid = 999976; uid <= 1000000; uid++)
+      const last = missingLast ? 999999 : 1000000;
+      let uids;
+      if (options.uid) {
+        assert.ok(Array.isArray(range));
+        uids = range.filter((uid) => uid <= last);
+      } else {
+        assert.equal(options.uid, false);
+        assert.equal(range, `${last - 24}:${last}`);
+        uids = Array.from({ length: 25 }, (_, index) => last - 24 + index);
+      }
+      for (const uid of uids)
         yield {
           uid,
           envelope: { subject: `Account ${id}`, date: new Date(uid * 1000) },
@@ -85,7 +95,8 @@ function client(id) {
           size: 100,
         };
     },
-    async fetchOne() {
+    async fetchOne(uid) {
+      if (missingLast && Number(uid) === 1000000) return false;
       return { source: mime, flags: new Set() };
     },
   };
@@ -196,6 +207,68 @@ test("mail preview and attachment downloads preserve MIME content and filenames"
   const download = await call("/attachment?folder=INBOX&uid=12&index=0");
   assert.deepEqual(Buffer.from(await download.arrayBuffer()), attachment);
 });
+
+test("a missing message returns a specific error and retires only its account's stale metadata", async () => {
+  invalidate(1);
+  invalidate(2);
+  const initial = await (await call("/messages?pageSize=25")).json();
+  assert.equal(initial.messages[0].uid, 1000000);
+  await (await call("/messages?pageSize=25", "b")).json();
+  const before = fetchCount;
+  missingLast = true;
+  try {
+    const response = await call("/message?folder=INBOX&uid=1000000&peek=1");
+    const body = await response.json();
+    assert.equal(response.status, 404);
+    assert.equal(body.error, "messageUnavailable");
+    assert.equal(body.code, "MESSAGE_NOT_FOUND");
+    assert.equal(body.requestId, response.headers.get("x-request-id"));
+    const other = await (await call("/messages?pageSize=25", "b")).json();
+    assert.equal(other.messages[0].uid, 1000000);
+    assert.equal(fetchCount, before);
+    const updated = await (await call("/messages?pageSize=25")).json();
+    assert.equal(updated.total, 999999);
+    assert.equal(updated.messages[0].uid, 999999);
+    assert.ok(updated.messages.every((message) => message.uid !== 1000000));
+    assert.equal(fetchCount, before + 1);
+    await (await call("/messages?pageSize=25")).json();
+    assert.equal(fetchCount, before + 1);
+    const log = await (await call("/diagnostics")).json();
+    assert.equal(
+      log.entries.find((entry) => entry.requestId === body.requestId).errorCode,
+      "MESSAGE_NOT_FOUND",
+    );
+  } finally {
+    missingLast = false;
+    invalidate(1);
+    invalidate(2);
+  }
+});
+test("missing-message recovery also refreshes the search index and search-page cache", async () => {
+  invalidate(1);
+  const route = "/search?q=recovery-test&field=subject&pageSize=25";
+  const initial = await (await call(route)).json();
+  assert.equal(initial.total, 4);
+  assert.ok(initial.messages.some((message) => message.uid === 1000000));
+  const before = fetchCount;
+  await (await call(route)).json();
+  assert.equal(fetchCount, before);
+  missingLast = true;
+  try {
+    assert.equal(
+      (await call("/message?folder=INBOX&uid=1000000&peek=1")).status,
+      404,
+    );
+    const fresh = await (await call(route)).json();
+    assert.equal(fresh.total, 2);
+    assert.ok(fresh.messages.every((message) => message.uid !== 1000000));
+    assert.ok(fetchCount > before);
+  } finally {
+    missingLast = false;
+    invalidate(1);
+  }
+});
+
 test("read timeouts return JSON with a traceable request ID rather than a generic proxy page", async () => {
   fail = true;
   invalidate(1);

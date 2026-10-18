@@ -13,6 +13,7 @@ const routes = new Set([
   "/api/source",
 ]);
 const codes = new Set([
+  "MESSAGE_NOT_FOUND",
   "IMAP_TIMEOUT",
   "IMAP_CANCELLED",
   "ETIMEDOUT",

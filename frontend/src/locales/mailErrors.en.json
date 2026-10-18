@@ -1,4 +1,8 @@
 {
+  "messageUnavailable": "This message is no longer available in this folder.",
+  "messageMissingRefreshing": "This message is no longer available in this folder. Reloading the message list.",
+  "messageMissingUpdated": "This message is no longer available in this folder. The message list has been refreshed. Please select another message.",
+  "messageMissingRefreshFailed": "This message is no longer available in this folder. The message list could not be refreshed yet. Please try again.",
   "apiInvalidResponse": "The server returned an invalid response. Please retry. Details can help diagnose the problem.",
   "apiUnavailable": "The backend is currently unavailable. Please retry.",
   "apiTimeout": "The request took too long. Please retry.",

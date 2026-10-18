@@ -1,6 +1,7 @@
 import {
   useState,
   useEffect,
+  useEffectEvent,
   useRef,
   useCallback,
   lazy,
@@ -71,6 +72,10 @@ import MessageBody from "../components/MessageBody";
 import MessageAttachments from "../components/MessageAttachments";
 import MailError from "../components/MailError";
 import { mailStatesChanged } from "../lib/apiResponse.js";
+import {
+  isMissingMessage,
+  clearMissingMessageRoute,
+} from "../lib/messageRecovery.js";
 import WindowFrame from "../components/WindowFrame";
 const CalendarPage = lazy(() => import("../components/CalendarPage"));
 const FilesPage = lazy(() => import("../components/FilesPage"));
@@ -132,6 +137,7 @@ export default function Mailbox() {
   const [errorInfo, setErrorInfo] = useState(null);
   const [readerRefresh, setReaderRefresh] = useState(0);
   const [notice, setNotice] = useState("");
+  const [missingMessage, setMissingMessage] = useState("");
   const [query, setQuery] = useState("");
   const [search, setSearch] = useState("");
   const [field, setField] = useState("all");
@@ -164,6 +170,7 @@ export default function Mailbox() {
   const detailRef = useRef(null);
   const readKeys = useRef(new Set());
   const listUpdatedAt = useRef(0);
+  const listRecovery = useRef(null);
   const navigateSection = useCallback(
     (next) => {
       setMenu("");
@@ -182,6 +189,26 @@ export default function Mailbox() {
       endpoint: e.endpoint,
     });
   }, []);
+  const recoverMissingMessage = useEffectEvent((message) => {
+    const key = messageKey(message);
+    setActive(null);
+    setDetail(null);
+    setReaderWindow(null);
+    setMessages((rows) => rows.filter((row) => messageKey(row) !== key));
+    setSelected((current) => {
+      const next = new Set(current);
+      next.delete(key);
+      return next;
+    });
+    if (anchor.current === key) anchor.current = null;
+    nextAfter.current = null;
+    setViewParams((current) => clearMissingMessageRoute(current, message), {
+      replace: true,
+    });
+    listRecovery.current = Symbol();
+    setMissingMessage("messageMissingRefreshing");
+    setRefresh((value) => value + 1);
+  });
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
@@ -247,6 +274,7 @@ export default function Mailbox() {
   useEffect(() => {
     if (!user || !ready) return;
     const controller = new AbortController();
+    const recovery = listRecovery.current;
     async function load() {
       setLoading(true);
       const key = JSON.stringify([
@@ -298,6 +326,8 @@ export default function Mailbox() {
           return;
         }
         setMessages(data.messages);
+        if (recovery && listRecovery.current === recovery)
+          setMissingMessage("messageMissingUpdated");
         listUpdatedAt.current = Date.now();
         if (data.folderStatus)
           setFolders((rows) =>
@@ -336,7 +366,11 @@ export default function Mailbox() {
         }
         if (data.skippedFolders?.length) setNotice(t("searchPartial"));
       } catch (e) {
-        if (!controller.signal.aborted) showError(e);
+        if (!controller.signal.aborted) {
+          if (recovery && listRecovery.current === recovery)
+            setMissingMessage("messageMissingRefreshFailed");
+          showError(e);
+        }
       } finally {
         if (!controller.signal.aborted) setLoading(false);
       }
@@ -403,7 +437,9 @@ export default function Mailbox() {
         if (controller.signal.aborted) return;
         setDetail(data);
       } catch (e) {
-        if (!controller.signal.aborted) showError(e);
+        if (controller.signal.aborted) return;
+        if (isMissingMessage(e)) recoverMissingMessage(active);
+        else showError(e);
       } finally {
         if (!controller.signal.aborted) setReading(false);
       }
@@ -645,6 +681,8 @@ export default function Mailbox() {
       });
       anchor.current = key;
     } else {
+      setMissingMessage("");
+      listRecovery.current = null;
       setSelected(new Set([key]));
       anchor.current = key;
       setImages(false);
@@ -1711,6 +1749,21 @@ export default function Mailbox() {
                 <div className="notice" role="status">
                   {notice}
                   <button className="icon-button" onClick={() => setNotice("")}>
+                    <X size={15} />
+                  </button>
+                </div>
+              )}
+              {missingMessage && (
+                <div className="notice" role="status">
+                  {t(missingMessage)}
+                  <button
+                    className="icon-button"
+                    aria-label={t("close")}
+                    onClick={() => {
+                      setMissingMessage("");
+                      listRecovery.current = null;
+                    }}
+                  >
                     <X size={15} />
                   </button>
                 </div>
