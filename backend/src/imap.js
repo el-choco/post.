@@ -11,7 +11,9 @@ function makeClient(acc) {
     port: acc.imap_port,
     secure: !!acc.imap_secure,
     doSTARTTLS: !acc.imap_secure,
-    auth: { user: acc.imap_user, pass: acc.password },
+    auth: acc.accessToken
+      ? { user: acc.imap_user, accessToken: acc.accessToken }
+      : { user: acc.imap_user, pass: acc.password },
     logger: false,
     tls: { rejectUnauthorized: !SELF_SIGNED },
     connectionTimeout: 15000,
@@ -22,7 +24,18 @@ function makeClient(acc) {
   return client;
 }
 
-const { withImap, closeAll } = createImapPool(makeClient);
+const { withImap: pooledImap, closeAll } = createImapPool(makeClient);
+async function withImap(account, fn, options) {
+  if (!account.imap_host)
+    throw require("./calendarNetwork").fail("multiuser.noMail", 409);
+  if (!account.accessToken && account.password?.startsWith("oauth:"))
+    account = {
+      ...account,
+      password: "",
+      accessToken: await require("./mailOAuth").access(account),
+    };
+  return pooledImap(account, fn, options);
+}
 
 const NAME_HINTS = {
   "\\Sent": [

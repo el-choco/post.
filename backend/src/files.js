@@ -22,11 +22,14 @@ async function source(accountId, value) {
   return row;
 }
 async function transfer(accountId, sourceId, itemId, res, maxSize) {
-  const conn = await source(accountId, sourceId);
+  const conn = sourceId === "shared" ? null : await source(accountId, sourceId);
   let download;
   if (conn) download = await cloud.download(conn, itemId);
   else {
-    const row = await storage.owned(accountId, itemId);
+    const row =
+      sourceId === "shared"
+        ? (await require("./fileAcl").access(accountId, itemId)).row
+        : await storage.owned(accountId, itemId);
     if (row.folder) throw fail("files.errors.notFile");
     download = {
       name: row.name,
@@ -65,7 +68,22 @@ async function transfer(accountId, sourceId, itemId, res, maxSize) {
 async function commit(accountId, uploadId) {
   try {
     const row = await storage.upload(accountId, uploadId),
-      conn = await source(accountId, row.source);
+      conn =
+        row.source === "shared" ? null : await source(accountId, row.source);
+    let target = row;
+    if (row.source === "shared") {
+      const { row: parent } = await require("./fileAcl").access(
+        accountId,
+        row.parent_id,
+        3,
+      );
+      if (
+        (await storage.used(parent.account_id)) + row.size >
+        storage.limits().quota
+      )
+        throw fail("files.errors.quota", 507);
+      target = { ...row, account_id: parent.account_id };
+    }
     const resultId = conn
       ? await cloud.upload(conn, row, async (sent) =>
           db.run("UPDATE file_uploads SET progress=?,expires_at=? WHERE id=?", [
@@ -74,7 +92,7 @@ async function commit(accountId, uploadId) {
             row.id,
           ]),
         )
-      : await storage.finishLocal(row);
+      : await storage.finishLocal(target);
     await db.run(
       "UPDATE file_uploads SET state='completed',result_id=?,progress=100 WHERE id=?",
       [resultId, row.id],
@@ -242,6 +260,12 @@ function createFilesRouter(auth, wrap) {
       res.json({
         sources: [
           { id: "local", kind: "local", name: "files.private", trash: true },
+          {
+            id: "shared",
+            kind: "shared",
+            name: "multiuser.shared",
+            trash: false,
+          },
           ...rows.map((r) => ({
             ...r,
             id: String(r.id),
@@ -351,8 +375,13 @@ function createFilesRouter(auth, wrap) {
   router.post(
     "/sources/:source/items/:id/download",
     wrap(async (req, res) => {
-      const conn = await source(req.account.id, req.params.source);
+      const conn =
+        req.params.source === "shared"
+          ? null
+          : await source(req.account.id, req.params.source);
       if (conn) await cloud.item(conn, req.params.id);
+      else if (req.params.source === "shared")
+        await require("./fileAcl").access(req.account.id, req.params.id);
       else await storage.owned(req.account.id, req.params.id);
       const token = crypto.randomBytes(32).toString("hex");
       await db.run("INSERT INTO file_downloads VALUES(?,?,?,?,?,?)", [

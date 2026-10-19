@@ -121,6 +121,19 @@ async function connection(accountId, sourceId) {
   return row;
 }
 async function descriptor(accountId, sourceId, itemId) {
+  await require("./fileAcl").actor(accountId);
+  if (sourceId === "shared") {
+    const { row, rights } = await require("./fileAcl").access(
+      accountId,
+      itemId,
+    );
+    return {
+      item: { ...storage.publicNode(row), readOnly: !(rights & 2) },
+      revision: { blob: row.blob_id, modified: row.modified_at },
+      row,
+      conn: null,
+    };
+  }
   const conn = await connection(accountId, sourceId);
   if (conn) return { ...(await cloud.officeDescriptor(conn, itemId)), conn };
   const row = await storage.owned(accountId, itemId);
@@ -213,7 +226,10 @@ function configFor(row, user, language, cfg) {
       user: {
         id: String(row.account_id),
         name: String(
-          user.settings?.identityName || user.email || "post.",
+          user.settings?.identityName ||
+            user.display_name ||
+            user.email ||
+            "post.",
         ).slice(0, 128),
       },
       customization: { forcesave: true, autosave: true, compactHeader: true },
@@ -307,6 +323,9 @@ async function start(account, sourceId, itemId, mode, language) {
   );
 }
 async function save(row, payload) {
+  await require("./fileAcl").actor(row.account_id);
+  if (row.source === "shared")
+    await require("./fileAcl").access(row.account_id, row.item_id, 3);
   const cfg = network.config();
   const bytes = await network.download(payload.url, cfg);
   const hash = sha256(bytes);
@@ -325,8 +344,7 @@ async function save(row, payload) {
     "application/octet-stream",
     bytes,
   );
-                                                                                
-                                                                     
+
   const recoveryName =
     payload.filetype && formats[payload.filetype.toLowerCase()]
       ? row.name.replace(/\.[^.]+$/, "." + payload.filetype.toLowerCase())
@@ -348,6 +366,7 @@ async function save(row, payload) {
     if (payload.filetype && payload.filetype.toLowerCase() !== row.file_type)
       throw fail("office.errors.formatChanged", 409);
     const data = await descriptor(row.account_id, row.source, row.item_id);
+    if (data.item.readOnly) throw fail("office.errors.readOnly", 403);
     const expected = JSON.parse(decrypt(row.revision_enc));
     if (JSON.stringify(data.revision) !== JSON.stringify(expected))
       throw fail("office.errors.conflict", 409);
@@ -362,7 +381,7 @@ async function save(row, payload) {
       );
     else
       revision = await storage.replaceContent(
-        row.account_id,
+        data.row.account_id,
         row.item_id,
         expected,
         staged,
@@ -425,6 +444,7 @@ function createOfficeRouter(auth, wrap) {
       const row = await session(req.params.id);
       if (!["active", "waiting"].includes(row.state))
         throw fail("office.errors.access", 403);
+      await descriptor(row.account_id, row.source, row.item_id);
       const snapshot = await storage.upload(row.account_id, row.snapshot_id);
       res.set({
         "Content-Type": "application/octet-stream",
@@ -453,8 +473,7 @@ function createOfficeRouter(auth, wrap) {
         cfg.secret,
       );
       const payload = raw.payload || raw;
-                                                                             
-                                                                    
+
       let saveError = false;
       await storage.locked("office-save:" + req.params.id, async () => {
         const row = await session(req.params.id);
@@ -532,8 +551,7 @@ function createOfficeRouter(auth, wrap) {
           const row = await session(req.params.id, req.account.id);
           if (!row.recovery_id) throw fail("office.errors.notFound", 404);
           let staged = await storage.upload(row.account_id, row.recovery_id);
-                                                                                
-                                                                                
+
           if (
             await db.get("SELECT id FROM file_nodes WHERE blob_id=?", [
               staged.id,

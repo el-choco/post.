@@ -1,0 +1,18 @@
+{
+  "action": "In Dateien speichern",
+  "aria": "{{filename}} in Dateien speichern",
+  "title": "Anhang in Dateien speichern",
+  "hint": "Wähle den Speicher und den Zielordner. Der Anhang wird direkt auf dem Server übertragen.",
+  "filename": "Dateiname",
+  "destination": "Zielordner",
+  "noFolders": "Keine Unterordner. Du kannst den Anhang hier speichern.",
+  "saving": "Wird gespeichert …",
+  "saved": "„{{name}}“ wurde in {{destination}} gespeichert.",
+  "conflict": "„{{name}}“ ist hier bereits vorhanden. Möchtest du eine Kopie speichern oder die bestehende Datei ersetzen?",
+  "copy": "Kopie speichern",
+  "replace": "Bestehende Datei ersetzen",
+  "copyOnly": "Dieser Eintrag kann nicht sicher ersetzt werden. Bitte speichere eine Kopie oder wähle einen anderen Namen.",
+  "changed": "Die Zieldatei hat sich inzwischen verändert. Bitte prüfe die Auswahl erneut.",
+  "confirmAgain": "Die Bestätigung ist abgelaufen oder passt nicht mehr zur Auswahl. Bitte brich die Ersetzen-Auswahl ab und starte das Speichern erneut.",
+  "notFound": "Dieser Anhang ist nicht mehr verfügbar. Bitte lade die Nachricht erneut."
+}

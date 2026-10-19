@@ -25,6 +25,19 @@ export async function readApiResponse(response) {
     if (typeof data?.error === "string" && data.error)
       error.message = data.error;
     if (typeof data?.code === "string") error.code = data.code;
+    if (
+      response.status === 409 &&
+      data?.code === "ATTACHMENT_NAME_CONFLICT" &&
+      typeof data.conflict?.name === "string"
+    )
+      error.conflict = {
+        name: data.conflict.name.slice(0, 1000),
+        canReplace: data.conflict.canReplace === true,
+        token:
+          typeof data.conflict.token === "string"
+            ? data.conflict.token.slice(0, 10000)
+            : "",
+      };
     throw error;
   }
   return data;

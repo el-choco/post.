@@ -6,3 +6,4 @@ backend/data/
 .env.*
 !.env.example
 .preview-pids.json
+admin-setup-token

@@ -21,6 +21,8 @@ import defaults from "../lib/preferences.json";
 import { desktopNotification, playSound } from "../lib/notifications";
 import ThemeEditor from "./ThemeEditor";
 import Diagnostics from "./Diagnostics";
+import AccountSettings from "./AccountSettings";
+import AdminSettings from "./AdminSettings";
 import { normalizeAppearance } from "../lib/appearance";
 const sections = {
   interface: [
@@ -117,6 +119,8 @@ const sections = {
   ],
 };
 const icons = {
+  account: UserRound,
+  admin: Users,
   interface: Monitor,
   theme: Palette,
   mailbox: Mail,
@@ -350,46 +354,54 @@ export default function SettingsPage({
   }
   return (
     <WorkspacePage title={t("settings")} onBack={onClose}>
-      <form onSubmit={save} className="preferences-form">
+      <div className="preferences-form">
         <div className="settings-content">
           <aside className="settings-nav">
             <p>{t("settingsHint")}</p>
-            {Object.entries(icons).map(([key, Icon]) => (
-              <button
-                type="button"
-                key={key}
-                className={tab === key ? "active" : ""}
-                onClick={() => {
-                  setTab(key);
-                  setTestNotice("");
-                }}
-              >
-                <Icon size={17} />
-                {t(
-                  ["identity", "visibleFolders"].includes(key)
-                    ? key
-                    : key === "theme"
-                      ? "theme.title"
-                      : key === "diagnostics"
-                        ? "diagnostics.title"
-                        : "prefs.tabs." + key,
-                )}
-              </button>
-            ))}
+            {Object.entries(icons)
+              .filter(([key]) => key !== "admin" || user.role === "admin")
+              .map(([key, Icon]) => (
+                <button
+                  type="button"
+                  key={key}
+                  className={tab === key ? "active" : ""}
+                  onClick={() => {
+                    setTab(key);
+                    setTestNotice("");
+                  }}
+                >
+                  <Icon size={17} />
+                  {t(
+                    ["account", "admin"].includes(key)
+                      ? "multiuser." + key
+                      : ["identity", "visibleFolders"].includes(key)
+                        ? key
+                        : key === "theme"
+                          ? "theme.title"
+                          : key === "diagnostics"
+                            ? "diagnostics.title"
+                            : "prefs.tabs." + key,
+                  )}
+                </button>
+              ))}
           </aside>
           <div className="settings-fields">
             <span className="eyebrow">post. · {t("settings")}</span>
             <h3>
               {t(
-                ["identity", "visibleFolders"].includes(tab)
-                  ? tab
-                  : tab === "theme"
-                    ? "theme.title"
-                    : tab === "diagnostics"
-                      ? "diagnostics.title"
-                      : "prefs.tabs." + tab,
+                ["account", "admin"].includes(tab)
+                  ? "multiuser." + tab
+                  : ["identity", "visibleFolders"].includes(tab)
+                    ? tab
+                    : tab === "theme"
+                      ? "theme.title"
+                      : tab === "diagnostics"
+                        ? "diagnostics.title"
+                        : "prefs.tabs." + tab,
               )}
             </h3>
+            {tab === "account" && <AccountSettings />}
+            {tab === "admin" && user.role === "admin" && <AdminSettings />}
             {sections[tab]?.map(field)}
             {tab === "diagnostics" && <Diagnostics />}
             {tab === "theme" && (
@@ -478,8 +490,13 @@ export default function SettingsPage({
           <button type="button" className="secondary" onClick={onClose}>
             {t(tab === "diagnostics" ? "close" : "cancel")}
           </button>
-          {tab !== "diagnostics" && (
-            <button className="primary" disabled={saving}>
+          {!["diagnostics", "account", "admin"].includes(tab) && (
+            <button
+              type="button"
+              onClick={save}
+              className="primary"
+              disabled={saving}
+            >
               {saving ? (
                 <LoaderCircle className="spinner" size={17} />
               ) : (
@@ -489,7 +506,7 @@ export default function SettingsPage({
             </button>
           )}
         </footer>
-      </form>
+      </div>
     </WorkspacePage>
   );
 }

@@ -1,6 +1,14 @@
-# 📁 Dateien / Files — post. 1.5.5
+# 📁 Dateien / Files — post. 1.6.0
 
 ## Deutsch
+
+### Mail-Anhänge direkt speichern ab 1.6.0
+
+In einer geöffneten Mail bietet jeder Anhang neben **Herunterladen** die Aktion **In Dateien speichern**. Wähle den privaten Speicher oder eine bereits verbundene Google-Drive-/OneDrive-Verbindung, öffne den gewünschten Zielordner und bestätige den Dateinamen. Die Übertragung läuft direkt auf dem Server; ein vorheriger Download auf den eigenen Rechner ist nicht nötig. Die Mail und ihr Anhang bleiben unverändert.
+
+Existiert der Name bereits, kann eine Kopie wie `Rechnung (1).pdf` gespeichert werden. Bei einer ersetzbaren Datei erscheint zusätzlich **Bestehende Datei ersetzen**. Diese Auswahl gilt nur für das bestätigte Postfach, den Anhang, die Datei, ihren Namen und Zielordner und läuft nach zehn Minuten ab. Änderungen seit der Rückfrage verhindern das Ersetzen. Ordner, native Google-Dokumente, schreibgeschützte Dateien und Cloud-Dateien ohne nutzbare Versionskennung werden nicht ersetzt; nutze eine Kopie oder einen anderen Namen. Es gibt keine automatische Wiederholung eines fehlgeschlagenen Schreibvorgangs.
+
+Private Dateien und temporäre Übertragungsdateien verwenden die bestehende verschlüsselte Ablage. `FILES_MAX_UPLOAD_MB` und `FILES_QUOTA_MB` gelten weiterhin; eine Arbeitskopie benötigt zusätzlich freien Platz, auch beim Ersetzen und bei einer Cloud-Übertragung. Vorhandene Cloud-Berechtigungen und deren Ordnergrenzen gelten unverändert. Es sind keine neuen OAuth-Zugangsdaten, Container oder `.env`-Variablen nötig. Mehrere Anhänge werden einzeln gespeichert; „Alle Anhänge speichern“ ist nicht enthalten.
 
 ### Privater Dateimanager
 
@@ -80,6 +88,14 @@ Die private Ablage und Cloudspeicher sind getrennte Speicherorte. Es gibt keine 
 **Verbindung entfernen** entfernt nur die gespeicherten Tokens und die Anzeige in post.; Cloud-Dateien bleiben bestehen. Die Anbieter-Autorisierung kann zusätzlich im Google-/Microsoft-Konto widerrufen werden. Verbindungen und Zugriffsdaten sind pro Postfach getrennt, Secrets werden nicht an das Frontend zurückgegeben. Die bestehenden Grenzen der Webmail-Sitzungsverwaltung bleiben unverändert. Die Anwendung führt keine Virenprüfung von Uploads durch.
 
 ## English
+
+### Save mail attachments directly since 1.6.0
+
+Each attachment in an open message offers **Save to Files** alongside **Download**. Select private storage or an existing Google Drive/OneDrive connection, choose a folder and confirm the file name. The transfer runs on the server without downloading the attachment to your computer first. The original message and attachment remain unchanged.
+
+Name conflicts offer a renamed copy such as `Invoice (1).pdf`. Safely replaceable files also offer **Replace existing file**. Replacement confirmation is bound to the account, attachment, target item, name, folder and revision, and expires after ten minutes. Intervening changes prevent replacement. Folders, native Google documents, read-only files and cloud items without a usable revision identifier are never replaced; choose a copy or another name. Failed writes are not automatically replayed.
+
+Private contents and temporary transfers use the existing encrypted storage. `FILES_MAX_UPLOAD_MB` and `FILES_QUOTA_MB` still apply; staging requires additional free space for replacements and cloud transfers too. Existing cloud permissions and folder restrictions remain in force. No new OAuth credentials, containers or `.env` variables are required. Attachments are saved individually; saving all attachments in one operation is not included.
 
 ### Private file manager
 

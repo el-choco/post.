@@ -20,10 +20,12 @@ export default function WorkspacePage({
     >
       <header className="workspace-page-header">
         <div className="workspace-page-heading">
-          <button className="secondary" onClick={onBack}>
-            <ArrowLeft size={18} />
-            {t("backToMail")}
-          </button>
+          {onBack && (
+            <button className="secondary" onClick={onBack}>
+              <ArrowLeft size={18} />
+              {t("backToMail")}
+            </button>
+          )}
           <h1 tabIndex={-1} ref={heading}>
             {title}
           </h1>

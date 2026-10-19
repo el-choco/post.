@@ -13,3 +13,5 @@ data
 **/*.csv
 preview-*.jpg
 .preview-pids.json
+
+**/admin-setup-token

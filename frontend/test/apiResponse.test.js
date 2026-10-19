@@ -37,6 +37,48 @@ test("JSON responses retain arrays, null, server error codes and safe request re
     { message: "mailTimeout", code: "IMAP_TIMEOUT", requestId: "safe-id" },
   );
 });
+test("attachment conflict responses preserve only the fields needed for explicit user choice", async () => {
+  let caught;
+  try {
+    await readApiResponse(
+      new Response(
+        JSON.stringify({
+          error: "attachmentSave.conflict",
+          code: "ATTACHMENT_NAME_CONFLICT",
+          conflict: {
+            name: "report.pdf",
+            canReplace: true,
+            token: "opaque-confirmation",
+            credentials: "must-not-copy",
+          },
+        }),
+        { status: 409 },
+      ),
+    );
+  } catch (error) {
+    caught = error;
+  }
+  assert.deepEqual(caught.conflict, {
+    name: "report.pdf",
+    canReplace: true,
+    token: "opaque-confirmation",
+  });
+  assert.ok(!JSON.stringify(caught).includes("must-not-copy"));
+  await assert.rejects(
+    readApiResponse(
+      new Response(
+        JSON.stringify({
+          error: "missing",
+          code: "OTHER",
+          conflict: { token: "untrusted" },
+        }),
+        { status: 404 },
+      ),
+    ),
+    (error) => !error.conflict,
+  );
+});
+
 test("unchanged mailbox states skip reloads while counts, flags and UID resets trigger updates", () => {
   const state = {
     folder: "INBOX",

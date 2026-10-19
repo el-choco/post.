@@ -27,7 +27,7 @@ export function oauthCallbackUrl(provider, value, purpose = "calendar") {
   return base
     ? base +
         "/api/" +
-        (purpose === "files" ? "files" : "calendar") +
+        (["files", "mail"].includes(purpose) ? purpose : "calendar") +
         "/oauth/" +
         provider +
         "/callback"

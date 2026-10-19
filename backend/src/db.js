@@ -23,13 +23,10 @@ const all = (sql, params = []) =>
     db.all(sql, params, (err, rows) => (err ? reject(err) : resolve(rows))),
   );
 
-                                                               
 async function init() {
   await run("PRAGMA journal_mode = WAL");
   await run("PRAGMA foreign_keys = ON");
   await run("PRAGMA busy_timeout = 5000");
-
-                                                                              
 
   await run(`CREATE TABLE IF NOT EXISTS mail_accounts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -106,13 +103,13 @@ async function init() {
   );
 
   await run("DELETE FROM sessions WHERE expires_at < ?", [Date.now()]);
-  await require('./calendar').initCalendar();
-  await require('./filesStorage').initFiles();
-  await require('./office').initOffice();
-  await require('./diagnostics').initDiagnostics();
+  await require("./calendar").initCalendar();
+  await require("./filesStorage").initFiles();
+  await require("./office").initOffice();
+  await require("./diagnostics").initDiagnostics();
+  await require("./identity").init();
 }
 
-                                                                                     
 async function transaction(fn) {
   const connection = new sqlite3.Database(path.join(dataDir, "webmail.db"));
   const exec = (sql, params = []) =>

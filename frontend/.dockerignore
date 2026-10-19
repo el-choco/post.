@@ -13,3 +13,5 @@ data
 preview-*.jpg
 README.md
 .preview-pids.json
+
+**/admin-setup-token

@@ -35,6 +35,7 @@ before(async () => {
         Date.now(),
       ],
     );
+  await require("./userFixture.cjs").all(db);
   const app = express();
   app.use(express.json());
   const auth = (req, res, next) => {

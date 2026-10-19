@@ -773,13 +773,20 @@ h3 {
 }
 .message-attachment-card {
   min-width: 0;
-  display: flex;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
   align-items: center;
   gap: 12px;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 10px;
   padding: 13px;
+}
+.attachment-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 .attachment-file-icon {
   color: var(--accent);
@@ -801,6 +808,50 @@ h3 {
   margin-top: 5px;
   color: var(--muted);
   font-size: calc(11px * var(--ui-font-scale));
+}
+.attachment-save-form .attachment-save-picker {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px;
+  min-height: 120px;
+}
+.attachment-save-crumbs,
+.attachment-save-crumbs span,
+.attachment-save-choices {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.attachment-save-crumbs {
+  margin-bottom: 12px;
+}
+.attachment-save-crumbs button {
+  color: var(--accent);
+  background: transparent;
+  border: 0;
+  overflow-wrap: anywhere;
+}
+.attachment-save-folders {
+  display: grid;
+  gap: 6px;
+  max-height: 240px;
+  overflow: auto;
+}
+.attachment-save-folders button {
+  justify-content: flex-start;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.attachment-save-folders button svg:last-child {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.attachment-save-conflict {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--tint);
 }
 .attachment-download {
   padding: 9px;
@@ -4304,4 +4355,106 @@ h3 {
 }
 .office-recovery-banner button {
   flex-shrink: 0;
+}
+
+.identity-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+.identity-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  min-width: 0;
+}
+.identity-card h4,
+.identity-card p {
+  margin: 0 0 10px;
+}
+.identity-card h4 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.identity-column {
+  flex-direction: column;
+  align-items: stretch;
+}
+.identity-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 620px;
+  width: 100%;
+}
+.identity-form label,
+.identity-inline > label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.identity-inline {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.identity-inline label:has(input[type="checkbox"]) {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+}
+.identity-inline input[type="checkbox"] {
+  width: auto;
+}
+.identity-users {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(310px, 100%), 1fr));
+  gap: 16px;
+}
+.identity-group-members {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  max-height: 220px;
+  overflow: auto;
+}
+.identity-group-members label {
+  display: flex;
+  flex-direction: row;
+  margin-bottom: 0;
+  align-items: center;
+  gap: 7px;
+}
+.identity-group-members input {
+  width: auto;
+}
+.identity-welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 22px;
+  margin: auto;
+  padding: 50px 24px;
+  max-width: 800px;
+}
+.identity-welcome h2,
+.identity-welcome p {
+  margin: 0;
+}
+.login-card small {
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.settings-fields .identity-settings label {
+  margin-bottom: 0;
 }

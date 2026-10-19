@@ -62,6 +62,7 @@ function createImapPool(makeClient, idleMs = IDLE_CONNECTION_MS, limits = {}) {
           account.imap_port,
           account.imap_user,
           account.password,
+          account.accessToken,
           account.imap_secure,
         ]),
       )

@@ -37,10 +37,7 @@ before(async () => {
         Date.now(),
       ],
     );
-    await db.run(
-      "INSERT INTO sessions(token_hash,account_id,expires_at) VALUES(?,?,?)",
-      [sha256(token), row.lastID, Date.now() + 300000],
-    );
+    await require("./userFixture.cjs").session(db, [sha256(token), row.lastID, Date.now() + 300000]);
   }
   pool = createImapPool(
     () => ({

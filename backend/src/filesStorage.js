@@ -429,6 +429,8 @@ async function* readBlob(id, keyEnc) {
 async function finishLocal(row) {
   return locked("account:" + row.account_id, async () => {
     await folder(row.account_id, row.parent_id);
+    if ((await used(row.account_id)) + row.size > limits().quota)
+      throw fail("files.errors.quota", 507);
     const id = crypto.randomUUID();
     try {
       await db.run(
@@ -450,32 +452,39 @@ async function finishLocal(row) {
         throw fail("files.errors.conflict", 409);
       throw e;
     }
-                                                                                           
+
     return id;
   });
 }
-async function replaceContent(account, id, expected, staged) {
+async function replaceContent(account, id, expected, staged, options = {}) {
   return locked("account:" + account, async () => {
     const row = await owned(account, id);
+    if ((await used(account)) - row.size + staged.size > limits().quota)
+      throw fail("files.errors.quota", 507);
     if (
       row.folder ||
       row.blob_id !== expected.blob ||
-      row.modified_at !== expected.modified
+      row.modified_at !== expected.modified ||
+      (options.name !== undefined && row.name !== options.name) ||
+      (Object.hasOwn(options, "parentId") && row.parent_id !== options.parentId)
     )
       throw fail("office.errors.conflict", 409);
     const modified = Math.max(Date.now(), row.modified_at + 1);
     await db.transaction(async (run) => {
       const result = await run(
-        "UPDATE file_nodes SET blob_id=?,key_enc=?,size=?,modified_at=? WHERE id=? AND account_id=? AND blob_id=? AND modified_at=? AND deleted_at IS NULL",
+        "UPDATE file_nodes SET blob_id=?,key_enc=?,size=?,modified_at=?,mime=? WHERE id=? AND account_id=? AND blob_id=? AND modified_at=? AND name=? AND parent_id IS ? AND deleted_at IS NULL",
         [
           staged.id,
           staged.key_enc,
           staged.size,
           modified,
+          options.mime ?? row.mime,
           id,
           account,
           expected.blob,
           expected.modified,
+          row.name,
+          row.parent_id,
         ],
       );
       if (result.changes !== 1) throw fail("office.errors.conflict", 409);

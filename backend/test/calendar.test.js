@@ -72,7 +72,7 @@ before(async () => {
         Date.now(),
       ],
     );
-  await db.run("INSERT INTO sessions VALUES(?,?,?)", [
+  await require("./userFixture.cjs").session(db, [
     sha256("a"),
     1,
     Date.now() + 3600000,

@@ -40,7 +40,12 @@ function readSettings(account) {
   } catch {}
   return {
     ...defaults,
-    name: account.email?.split("@")[0] || "",
+    name:
+      account.display_name ||
+      (account.email?.endsWith("@post.internal")
+        ? ""
+        : account.email?.split("@")[0]) ||
+      "",
     ...stored,
     appearance: normalizeAppearance(stored.appearance),
   };

@@ -16,11 +16,16 @@ import mailErrorsDe from "./locales/mailErrors.de.json";
 import mailErrorsEn from "./locales/mailErrors.en.json";
 import diagnosticsDe from "./locales/diagnostics.de.json";
 import diagnosticsEn from "./locales/diagnostics.en.json";
+import attachmentSaveDe from "./locales/attachmentSave.de.json";
+import attachmentSaveEn from "./locales/attachmentSave.en.json";
+import identityDe from "./locales/identity.de.json";
+import identityEn from "./locales/identity.en.json";
 i18n.use(initReactI18next).init({
   resources: {
     de: {
       translation: {
         ...de,
+        multiuser: identityDe,
         ...featuresDe,
         ...mailErrorsDe,
         calendar: calendarDe,
@@ -28,11 +33,13 @@ i18n.use(initReactI18next).init({
         office: officeDe,
         theme: themeDe,
         diagnostics: diagnosticsDe,
+        attachmentSave: attachmentSaveDe,
       },
     },
     en: {
       translation: {
         ...en,
+        multiuser: identityEn,
         ...featuresEn,
         ...mailErrorsEn,
         calendar: calendarEn,
@@ -40,6 +47,7 @@ i18n.use(initReactI18next).init({
         office: officeEn,
         theme: themeEn,
         diagnostics: diagnosticsEn,
+        attachmentSave: attachmentSaveEn,
       },
     },
   },

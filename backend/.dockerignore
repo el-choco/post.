@@ -12,3 +12,5 @@ test
 *.csv
 README.md
 .preview-pids.json
+
+**/admin-setup-token

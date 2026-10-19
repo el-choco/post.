@@ -1,0 +1,18 @@
+{
+  "action": "Save to Files",
+  "aria": "Save {{filename}} to Files",
+  "title": "Save attachment to Files",
+  "hint": "Choose storage and a destination folder. The attachment is transferred directly on the server.",
+  "filename": "File name",
+  "destination": "Destination folder",
+  "noFolders": "No subfolders. You can save the attachment here.",
+  "saving": "Saving …",
+  "saved": "“{{name}}” was saved to {{destination}}.",
+  "conflict": "“{{name}}” already exists here. Would you like to save a copy or replace the existing file?",
+  "copy": "Save a copy",
+  "replace": "Replace existing file",
+  "copyOnly": "This item cannot be replaced safely. Please save a copy or choose a different name.",
+  "changed": "The destination file has changed. Please review your selection again.",
+  "confirmAgain": "The confirmation expired or no longer matches your selection. Cancel the replacement choice and try saving again.",
+  "notFound": "This attachment is no longer available. Please reload the message."
+}

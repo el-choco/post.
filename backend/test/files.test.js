@@ -112,7 +112,7 @@ before(async () => {
     ["a", 1],
     ["b", 2],
   ])
-    await db.run("INSERT INTO sessions VALUES(?,?,?)", [
+    await require("./userFixture.cjs").session(db, [
       sha256(token),
       id,
       Date.now() + 3600000,
@@ -392,7 +392,7 @@ test("download tickets expire, are single-use and are invalidated by logout", as
     (await call(third.data.url.replace("/api/files", ""))).status,
     404,
   );
-  await db.run("INSERT INTO sessions VALUES(?,?,?)", [
+  await require("./userFixture.cjs").session(db, [
     sha256("a"),
     1,
     Date.now() + 3600000,
@@ -460,7 +460,7 @@ test("file OAuth is separate, uses PKCE/session binding, hides secrets and suppo
     ).status,
     400,
   );
-  await db.run("INSERT INTO sessions VALUES(?,?,?)", [
+  await require("./userFixture.cjs").session(db, [
     sha256("a"),
     1,
     Date.now() + 3600000,

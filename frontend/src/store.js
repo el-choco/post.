@@ -4,7 +4,12 @@ import { normalizeAppearance } from "./lib/appearance.js";
 function readStoredUser() {
   try {
     const storedUser = localStorage.getItem("user");
-    return storedUser ? JSON.parse(storedUser) : null;
+    const user = storedUser ? JSON.parse(storedUser) : null;
+    if (user && !user.demo && !user.id) {
+      localStorage.removeItem("user");
+      return null;
+    }
+    return user;
   } catch {
     localStorage.removeItem("user");
     return null;

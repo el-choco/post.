@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Mail, ArrowRight, ShieldCheck, Moon, Sun } from "lucide-react";
@@ -9,6 +9,27 @@ export default function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [repeat, setRepeat] = useState("");
+  const [name, setName] = useState("");
+  const [setupToken, setSetupToken] = useState("");
+  const [register, setRegister] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [status, setStatus] = useState({ setup: false, registration: true });
+  useEffect(() => {
+    let stopped = false;
+    fetch("/api/auth/status")
+      .then((r) => r.json())
+      .then((value) => {
+        if (!stopped) {
+          setStatus(value);
+          if (value.setup) setRegister(true);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      stopped = true;
+    };
+  }, []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   if (user) return <Navigate to="/" />;
@@ -17,21 +38,21 @@ export default function Login() {
     setLoading(true);
     setError("");
     try {
-      const response = await fetch("/api/login", {
+      if (register && password !== repeat)
+        throw new Error("multiuser.passwordMismatch");
+      const response = await fetch(register ? "/api/register" : "/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, name, setupToken }),
       });
       const data = await response.json();
-      if (!response.ok)
-        throw new Error(
-          {
-            auth: "loginAuth",
-            connect: "loginConnect",
-            smtp: "loginConnect",
-            rate: "loginRate",
-          }[data.code] || "error",
-        );
+      if (!response.ok) throw new Error(data.error || "error");
+      if (data.pending) {
+        setPending(true);
+        setPassword("");
+        setRepeat("");
+        return;
+      }
       setUser({ ...data.account, token: data.token });
       navigate("/");
     } catch (e) {
@@ -87,9 +108,34 @@ export default function Login() {
           </div>
         </div>
         <form className="login-card" onSubmit={login}>
-          <span className="eyebrow">WEBMAIL</span>
-          <h2>{t("login")}</h2>
-          <p>{t("loginHint")}</p>
+          <span className="eyebrow">post. 2.0</span>
+          <h2>
+            {t(
+              status.setup
+                ? "multiuser.setupTitle"
+                : register
+                  ? "multiuser.register"
+                  : "login",
+            )}
+          </h2>
+          <p>{t("multiuser.loginHint")}</p>
+          {pending && (
+            <p className="notice" role="status">
+              {t("multiuser.pending")}
+            </p>
+          )}
+          {register && (
+            <label>
+              {t("displayName")}
+              <input
+                required
+                maxLength={100}
+                autoComplete="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </label>
+          )}
           <label>
             {t("email")}
             <input
@@ -102,28 +148,71 @@ export default function Login() {
             />
           </label>
           <label>
-            {t("password")}
+            {t("multiuser.postPassword")}
             <input
               type="password"
-              autoComplete="current-password"
+              autoComplete={register ? "new-password" : "current-password"}
+              minLength={register ? 12 : undefined}
+              maxLength={256}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
             />
           </label>
+          {register && (
+            <label>
+              {t("multiuser.repeatPassword")}
+              <input
+                type="password"
+                required
+                minLength={12}
+                maxLength={256}
+                autoComplete="new-password"
+                value={repeat}
+                onChange={(e) => setRepeat(e.target.value)}
+              />
+            </label>
+          )}
+          {register && status.setup && (
+            <label>
+              {t("multiuser.setupToken")}
+              <input
+                required
+                autoComplete="off"
+                value={setupToken}
+                onChange={(e) => setSetupToken(e.target.value)}
+              />
+              <small>{t("multiuser.setupHint")}</small>
+            </label>
+          )}
           {error && (
             <div className="notice error" role="alert">
               {error}
             </div>
           )}
           <button className="primary login-submit" disabled={loading}>
-            {t(loading ? "loading" : "login")}
+            {t(loading ? "loading" : register ? "multiuser.register" : "login")}
             <ArrowRight size={18} />
           </button>
           <div className="secure-hint">
             <ShieldCheck size={16} />
-            {t("secureHint")}
+            {t("multiuser.passwordHint")}
           </div>
+          {status.registration && !status.setup && (
+            <button
+              type="button"
+              className="text-button"
+              onClick={() => {
+                setRegister((v) => !v);
+                setError("");
+                setPending(false);
+              }}
+            >
+              {t(
+                register ? "multiuser.backToLogin" : "multiuser.createAccount",
+              )}
+            </button>
+          )}
           <button
             className="text-button demo-button"
             type="button"

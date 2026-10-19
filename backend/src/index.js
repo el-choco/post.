@@ -6,14 +6,13 @@ const { simpleParser } = require("mailparser");
 const sanitizeHtml = require("sanitize-html");
 
 const { run, get, all, init } = require("./db");
-const { encrypt, decrypt, sha256 } = require("./crypto");
-const { resolveAccount } = require("./autodiscover");
 const { withImap, listFolders, findSpecial, groupItems } = require("./imap");
 const { cached, invalidate } = require("./cache");
 const { fetchRows, messagePage, folderState } = require("./mailList");
 const mailState = require("./mailState");
 const diagnostics = require("./diagnostics");
 const { createTrace, runTrace, measure } = require("./diagnosticsTrace");
+const { saveAttachment } = require("./attachmentFiles");
 const {
   readSettings,
   normalizeSettings,
@@ -28,6 +27,7 @@ app.get("/api/health", (req, res) =>
 app.set("trust proxy", true);
 app.use(express.json({ limit: "40mb" }));
 app.use("/api", (req, res, next) => {
+  res.setHeader("Cache-Control", "no-store");
   const started = Date.now();
   const route = req.originalUrl.split("?")[0];
   req.diagnosticTrace = createTrace();
@@ -97,113 +97,15 @@ app.use("/api", (req, res, next) => {
 });
 
 const PORT = process.env.PORT || 3000;
-const SESSION_MS = 30 * 24 * 3600 * 1000;
 const SELF_SIGNED = process.env.ALLOW_SELF_SIGNED === "true";
 
 const wrap = (fn) => (req, res, next) =>
   Promise.resolve(fn(req, res, next)).catch(next);
 
-const failedLogins = new Map();
-
-function loginLimiter(req, res, next) {
-  const now = Date.now();
-  const recent = (failedLogins.get(req.ip) || []).filter(
-    (t) => now - t < 10 * 60 * 1000,
-  );
-  failedLogins.set(req.ip, recent);
-  if (recent.length >= 10)
-    return res.status(429).json({ error: "Too many attempts", code: "rate" });
-  next();
-}
-
-async function auth(req, res, next) {
-  try {
-    const header = req.headers.authorization || "";
-    const token = header.startsWith("Bearer ") ? header.slice(7) : "";
-    if (!token) return res.status(401).json({ error: "Unauthorized" });
-    const acc = await get(
-      `SELECT a.* FROM sessions s JOIN mail_accounts a ON a.id = s.account_id
-       WHERE s.token_hash = ? AND s.expires_at > ?`,
-      [sha256(token), Date.now()],
-    );
-    if (!acc) return res.status(401).json({ error: "Unauthorized" });
-    acc.password = decrypt(acc.password_enc);
-    req.account = acc;
-    req.tokenHash = sha256(token);
-    next();
-  } catch (e) {
-    next(e);
-  }
-}
-
-app.post(
-  "/api/login",
-  loginLimiter,
-  wrap(async (req, res) => {
-    const email = String(req.body.email || "")
-      .trim()
-      .toLowerCase();
-    const password = String(req.body.password || "");
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || !password) {
-      return res.status(400).json({ error: "Invalid input", code: "input" });
-    }
-
-    let cfg;
-    try {
-      cfg = await resolveAccount(email, password);
-    } catch (e) {
-      if (e && e.code) {
-        if (e.code === "auth") failedLogins.get(req.ip).push(Date.now());
-        return res.status(401).json({ error: e.message, code: e.code });
-      }
-      throw e;
-    }
-
-    const existing = await get(
-      "SELECT id, settings FROM mail_accounts WHERE email = ?",
-      [email],
-    );
-    const values = [
-      encrypt(password),
-      cfg.imap.host,
-      cfg.imap.port,
-      cfg.imap.secure ? 1 : 0,
-      cfg.imap.user,
-      cfg.smtp.host,
-      cfg.smtp.port,
-      cfg.smtp.secure ? 1 : 0,
-      cfg.smtp.user,
-    ];
-    let accountId;
-    if (existing) {
-      accountId = existing.id;
-      await run(
-        `UPDATE mail_accounts SET password_enc=?, imap_host=?, imap_port=?, imap_secure=?, imap_user=?,
-         smtp_host=?, smtp_port=?, smtp_secure=?, smtp_user=? WHERE id=?`,
-        [...values, accountId],
-      );
-    } else {
-      const r = await run(
-        `INSERT INTO mail_accounts (password_enc, imap_host, imap_port, imap_secure, imap_user,
-         smtp_host, smtp_port, smtp_secure, smtp_user, email, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
-        [...values, email, Date.now()],
-      );
-      accountId = r.lastID;
-    }
-
-    const token = crypto.randomBytes(32).toString("hex");
-    invalidate(accountId);
-    await run(
-      "INSERT INTO sessions (token_hash, account_id, expires_at) VALUES (?,?,?)",
-      [sha256(token), accountId, Date.now() + SESSION_MS],
-    );
-
-    res.json({
-      token,
-      account: { email, imapHost: cfg.imap.host, smtpHost: cfg.smtp.host },
-    });
-  }),
-);
+const identity = require("./identity");
+const auth = identity.auth;
+app.use("/api", identity.router(wrap));
+app.use("/api/mail", require("./mailOAuth").router(auth, wrap));
 
 app.post(
   "/api/logout",
@@ -211,14 +113,17 @@ app.post(
   wrap(async (req, res) => {
     const settings = readSettings(req.account);
     if (
+      req.account.imap_host &&
+      req.user.permissions.mail &&
       (settings.emptyTrashOnLogout !== "never" ||
         settings.expungeInboxOnLogout) &&
       req.body.confirmMaintenance !== true
     )
       return res.status(409).json({ error: "maintenanceConfirm" });
     if (
-      settings.emptyTrashOnLogout !== "never" ||
-      settings.expungeInboxOnLogout
+      req.account.imap_host &&
+      req.user.permissions.mail &&
+      (settings.emptyTrashOnLogout !== "never" || settings.expungeInboxOnLogout)
     )
       await withImap(req.account, async (c) => {
         const folders = await listFolders(c),
@@ -256,11 +161,6 @@ app.post(
     res.json({ success: true });
   }),
 );
-
-app.get("/api/me", auth, (req, res) => {
-  const a = req.account;
-  res.json({ email: a.email, imapHost: a.imap_host, smtpHost: a.smtp_host });
-});
 
 app.get("/api/settings", auth, (req, res) =>
   res.json(readSettings(req.account)),
@@ -770,6 +670,54 @@ app.get(
   }),
 );
 
+app.post(
+  "/api/attachment/save",
+  auth,
+  wrap(async (req, res) => {
+    const folder = req.body.folder;
+    const uid = req.body.uid;
+    const index = req.body.index;
+    if (
+      typeof folder !== "string" ||
+      !folder ||
+      folder.length > 4096 ||
+      !Number.isSafeInteger(uid) ||
+      uid <= 0 ||
+      !Number.isSafeInteger(index) ||
+      index < 0
+    )
+      return res.status(400).json({ error: "files.errors.input" });
+    const raw = await withImap(req.account, (c) => readSource(c, folder, uid), {
+      read: true,
+      signal: req.imapSignal,
+    });
+    if (!raw)
+      return res
+        .status(404)
+        .json({ error: "messageUnavailable", code: "MESSAGE_NOT_FOUND" });
+    const parsed = await simpleParser(raw.source);
+    const attachment = parsed.attachments[index];
+    if (!attachment)
+      return res.status(404).json({ error: "attachmentSave.notFound" });
+    try {
+      res.json(
+        await saveAttachment(req.account.id, attachment, req.body, [
+          folder,
+          uid,
+          index,
+        ]),
+      );
+    } catch (error) {
+      if (error.code !== "ATTACHMENT_NAME_CONFLICT") throw error;
+      res.status(409).json({
+        error: error.message,
+        code: error.code,
+        conflict: error.conflict,
+      });
+    }
+  }),
+);
+
 app.get(
   "/api/source",
   auth,
@@ -1163,7 +1111,13 @@ app.post(
       port: req.account.smtp_port,
       secure: !!req.account.smtp_secure,
       requireTLS: !req.account.smtp_secure,
-      auth: { user: req.account.smtp_user, pass: req.account.password },
+      auth: req.account.accessToken
+        ? {
+            type: "OAuth2",
+            user: req.account.smtp_user,
+            accessToken: req.account.accessToken,
+          }
+        : { user: req.account.smtp_user, pass: req.account.password },
       tls: { rejectUnauthorized: !SELF_SIGNED },
     });
     try {
@@ -1233,7 +1187,9 @@ app.post(
       port: acc.smtp_port,
       secure: !!acc.smtp_secure,
       requireTLS: !acc.smtp_secure,
-      auth: { user: acc.smtp_user, pass: acc.password },
+      auth: acc.accessToken
+        ? { type: "OAuth2", user: acc.smtp_user, accessToken: acc.accessToken }
+        : { user: acc.smtp_user, pass: acc.password },
       tls: { rejectUnauthorized: !SELF_SIGNED },
     });
     try {
@@ -1291,6 +1247,7 @@ app.use(
   "/api/calendar",
   require("./calendar").createCalendarRouter(auth, wrap),
 );
+app.use("/api/files", require("./fileAcl").router(auth, wrap));
 app.use("/api/files", require("./files").createFilesRouter(auth, wrap));
 app.use("/api/office", require("./office").createOfficeRouter(auth, wrap));
 app.use("/api/diagnostics", diagnostics.createDiagnosticsRouter(auth, wrap));

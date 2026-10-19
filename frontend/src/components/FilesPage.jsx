@@ -27,11 +27,13 @@ import {
   Check,
   LoaderCircle,
   Eye,
+  Share2,
 } from "lucide-react";
 import WorkspacePage from "./WorkspacePage";
 import Dialog from "./Dialog";
 import CalendarOAuthSetup from "./CalendarOAuthSetup";
 import OfficePreview from "./OfficePreview";
+import FileSharingDialog from "./FileSharingDialog";
 import { officeFile } from "../lib/office";
 import { useStore } from "../store";
 import { api, post } from "../api";
@@ -98,6 +100,8 @@ export default function FilesPage({ settings, onBack, active = true }) {
     [pickerCrumbs, setPickerCrumbs] = useState([]),
     [pickerLoading, setPickerLoading] = useState(false);
   const [preview, setPreview] = useState(null);
+  const [sharing, setSharing] = useState(null),
+    [sharedWrite, setSharedWrite] = useState(false);
   const [officePreview, setOfficePreview] = useState(null);
   const [recoveries, setRecoveries] = useState([]);
   const anchor = useRef(null),
@@ -110,6 +114,7 @@ export default function FilesPage({ settings, onBack, active = true }) {
     previewSequence = useRef(0);
   const source = sources.find((s) => s.id === sourceId) || sources[0];
   const busy = working || uploading;
+  const writable = sourceId !== "shared" || sharedWrite;
   const path = "/files/sources/" + sourceId;
   const chosen = items.filter((item) => selected.has(item.id));
   const one = chosen.length === 1 ? chosen[0] : null;
@@ -126,13 +131,18 @@ export default function FilesPage({ settings, onBack, active = true }) {
       ),
     [items, sort, locale],
   );
-  const label = (s) => (s.kind === "local" ? t("files.private") : s.name);
+  const label = (s) =>
+    s.kind === "local"
+      ? t("files.private")
+      : s.kind === "shared"
+        ? t("multiuser.shared")
+        : s.name;
   const showError = (e) => setError(e.message || "files.errors.remote");
   const readSources = useCallback(async () => {
     if (user.demo) return;
     const result = await api("/files/sources");
     setSources(result.sources);
-  }, [user.demo]);
+  }, [user.demo, user.hasMail, user.mailEmail]);
   useEffect(() => {
     readSources().catch(showError);
     if (!user.demo) api("/files/config").then(setConfig).catch(showError);
@@ -225,6 +235,7 @@ export default function FilesPage({ settings, onBack, active = true }) {
               ]
             : result.items,
         );
+        setSharedWrite(!!result.canWrite);
         setBreadcrumbs(result.breadcrumbs);
         setNext(result.next);
         setUsed(result.used || 0);
@@ -245,6 +256,7 @@ export default function FilesPage({ settings, onBack, active = true }) {
     }
   }, [load, refresh, active]);
   function openFolder(id) {
+    setSharedWrite(false);
     setParent(id);
     setTrash(false);
     setQuery("");
@@ -252,6 +264,7 @@ export default function FilesPage({ settings, onBack, active = true }) {
     setError("");
   }
   function chooseSource(s) {
+    setSharedWrite(false);
     setSourceId(s.id);
     setParent("root");
     setTrash(false);
@@ -474,6 +487,10 @@ export default function FilesPage({ settings, onBack, active = true }) {
     }
   }
   async function addUploads(batch) {
+    if (!writable) {
+      setError("multiuser.forbidden");
+      return;
+    }
     if (queueLock.current || trash) {
       setError("files.errors.busy");
       return;
@@ -629,7 +646,7 @@ export default function FilesPage({ settings, onBack, active = true }) {
       onBack={onBack}
       headerActions={
         <div className="files-toolbar">
-          {!trash && (
+          {!trash && writable && (
             <>
               <button
                 className="primary"
@@ -729,6 +746,9 @@ export default function FilesPage({ settings, onBack, active = true }) {
         </div>
       }
     >
+      {sharing && (
+        <FileSharingDialog item={sharing} onClose={() => setSharing(null)} />
+      )}
       {!!recoveries.length && (
         <div className="office-recovery-banner" role="status">
           <strong>
@@ -790,7 +810,13 @@ export default function FilesPage({ settings, onBack, active = true }) {
                 )}
                 <span>
                   {label(s)}
-                  <small>{t("files.kind_" + s.kind)}</small>
+                  <small>
+                    {t(
+                      s.kind === "shared"
+                        ? "multiuser.sharedHint"
+                        : "files.kind_" + s.kind,
+                    )}
+                  </small>
                 </span>
               </button>
             ))}
@@ -819,7 +845,7 @@ export default function FilesPage({ settings, onBack, active = true }) {
               <Trash2 size={18} />
               {t("files.trash")}
             </button>
-          ) : (
+          ) : source.kind === "microsoft" ? (
             <a
               className="files-trash-link"
               href="https://onedrive.live.com/"
@@ -829,8 +855,8 @@ export default function FilesPage({ settings, onBack, active = true }) {
               <Trash2 size={16} />
               {t("files.providerTrash")}
             </a>
-          )}
-          {source.kind !== "local" && (
+          ) : null}
+          {!["local", "shared"].includes(source.kind) && (
             <button
               className="text-button danger"
               disabled={busy}
@@ -870,7 +896,7 @@ export default function FilesPage({ settings, onBack, active = true }) {
           className="files-main"
           aria-busy={loading}
           onDragEnter={(e) => {
-            if (e.dataTransfer.types.includes("Files")) {
+            if (writable && e.dataTransfer.types.includes("Files")) {
               e.preventDefault();
               dragDepth.current++;
               setDragging(true);
@@ -882,7 +908,8 @@ export default function FilesPage({ settings, onBack, active = true }) {
           }}
           onDragOver={(e) => {
             e.preventDefault();
-            e.dataTransfer.dropEffect = trash || uploading ? "none" : "copy";
+            e.dataTransfer.dropEffect =
+              trash || uploading || !writable ? "none" : "copy";
           }}
           onDrop={async (e) => {
             e.preventDefault();
@@ -926,6 +953,16 @@ export default function FilesPage({ settings, onBack, active = true }) {
                 : t("files.entries", { count: items.length })}
             </label>
             <div className="files-selection-actions">
+              {source.kind === "local" && !trash && (
+                <button
+                  className="text-button"
+                  disabled={busy || !one || user.demo}
+                  onClick={() => setSharing(one)}
+                >
+                  <Share2 size={16} />
+                  {t("multiuser.share")}
+                </button>
+              )}
               {trash ? (
                 <>
                   <button
@@ -964,7 +1001,12 @@ export default function FilesPage({ settings, onBack, active = true }) {
                   </button>
                   <button
                     className="text-button"
-                    disabled={busy || !one || one.readOnly}
+                    disabled={
+                      busy ||
+                      !one ||
+                      one.readOnly ||
+                      (sourceId === "shared" && !(one.rights & 2))
+                    }
                     onClick={() => {
                       setError("");
                       setModal({ mode: "rename", item: one, name: one.name });
@@ -976,7 +1018,13 @@ export default function FilesPage({ settings, onBack, active = true }) {
                   <button
                     className="text-button"
                     disabled={
-                      busy || !chosen.length || chosen.some((i) => i.readOnly)
+                      busy ||
+                      !chosen.length ||
+                      chosen.some(
+                        (i) =>
+                          i.readOnly ||
+                          (sourceId === "shared" && (i.rights & 7) !== 7),
+                      )
                     }
                     onClick={() => {
                       setError("");
@@ -990,7 +1038,11 @@ export default function FilesPage({ settings, onBack, active = true }) {
                   <button
                     className="text-button danger"
                     disabled={
-                      busy || !chosen.length || chosen.some((i) => i.readOnly)
+                      busy ||
+                      !chosen.length ||
+                      chosen.some((i) =>
+                        sourceId === "shared" ? !(i.rights & 4) : i.readOnly,
+                      )
                     }
                     onClick={() => {
                       setError("");
@@ -1096,8 +1148,16 @@ export default function FilesPage({ settings, onBack, active = true }) {
                             : "files.empty",
                     )}
                   </h2>
-                  <p>{t(trash ? "files.emptyTrashHint" : "files.dropHint")}</p>
-                  {!trash && !search && (
+                  <p>
+                    {t(
+                      trash
+                        ? "files.emptyTrashHint"
+                        : sourceId === "shared" && !writable
+                          ? "multiuser.sharedEmptyHint"
+                          : "files.dropHint",
+                    )}
+                  </p>
+                  {!trash && !search && writable && (
                     <button
                       className="secondary"
                       disabled={busy}
@@ -1147,7 +1207,7 @@ export default function FilesPage({ settings, onBack, active = true }) {
                   <dt>{t("files.modified")}</dt>
                   <dd>{formatDate(one.modifiedAt)}</dd>
                 </dl>
-                {!trash && (
+                {!trash && writable && (
                   <button
                     className="secondary"
                     onClick={() => void openItem(one)}
@@ -1208,7 +1268,8 @@ export default function FilesPage({ settings, onBack, active = true }) {
                         {entry.error
                           ? t(entry.error)
                           : t("files.upload_" + entry.state)}
-                        {entry.state === "processing" && source.kind !== "local"
+                        {entry.state === "processing" &&
+                        !["local", "shared"].includes(source.kind)
                           ? " · " + entry.progress + "%"
                           : ""}
                       </small>
@@ -1460,7 +1521,7 @@ export default function FilesPage({ settings, onBack, active = true }) {
             >
               {t("close")}
             </button>
-            {!trash && (
+            {!trash && writable && (
               <button
                 className="primary"
                 onClick={() => void download(preview.item)}

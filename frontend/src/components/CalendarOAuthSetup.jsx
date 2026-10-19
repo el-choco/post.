@@ -11,6 +11,7 @@ export default function CalendarOAuthSetup({
   onSaved,
   onBack,
   purpose = "calendar",
+  startBody = {},
 }) {
   const { t } = useTranslation();
   const [baseUrl, setBaseUrl] = useState(
@@ -54,7 +55,7 @@ export default function CalendarOAuthSetup({
       if (sameOrigin) {
         const authorization = await post(
           "/" + purpose + "/oauth/" + provider + "/start",
-          {},
+          startBody,
         );
         window.location.assign(authorization.url);
       }

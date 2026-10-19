@@ -54,6 +54,7 @@ import { Panel, PanelGroup, PanelResizeHandle } from "../components/Panels";
 import { useStore } from "../store";
 import { api, post, messageKey, selectRange } from "../api";
 import SettingsPage from "../components/SettingsPage";
+import WorkspacePage from "../components/WorkspacePage";
 import Dialog from "../components/Dialog";
 import Composer from "../components/Composer";
 import Contacts from "../components/Contacts";
@@ -70,6 +71,7 @@ import {
 import { desktopNotification, playSound } from "../lib/notifications";
 import MessageBody from "../components/MessageBody";
 import MessageAttachments from "../components/MessageAttachments";
+import SaveAttachmentDialog from "../components/SaveAttachmentDialog";
 import MailError from "../components/MailError";
 import { mailStatesChanged } from "../lib/apiResponse.js";
 import {
@@ -109,6 +111,22 @@ function storedColumns() {
 export default function Mailbox() {
   const { user, logout, darkMode, toggleDarkMode } = useStore();
   const { t } = useTranslation();
+  const hasMail = !!(
+    user?.demo ||
+    (user?.hasMail && user?.permissions?.mail !== false)
+  );
+  useEffect(() => {
+    if (!user?.token || user.demo) return;
+    let stopped = false;
+    api("/me")
+      .then((me) => {
+        if (!stopped) useStore.getState().setUser({ ...me, token: user.token });
+      })
+      .catch(() => {});
+    return () => {
+      stopped = true;
+    };
+  }, [user?.token, user?.demo]);
   const [viewParams, setViewParams] = useSearchParams();
   const view = viewParams.get("view") || "mail";
   const section = ["contacts", "settings", "calendar", "files"].includes(view)
@@ -160,6 +178,7 @@ export default function Mailbox() {
   const [source, setSource] = useState("");
   const [images, setImages] = useState(false);
   const [downloading, setDownloading] = useState(new Set());
+  const [attachmentTarget, setAttachmentTarget] = useState(null);
   const [readerWindow, setReaderWindow] = useState(null),
     [composerWindow, setComposerWindow] = useState(null);
   const viewKey = useRef(""),
@@ -245,7 +264,7 @@ export default function Mailbox() {
     };
   }, [user, showError]);
   useEffect(() => {
-    if (!user) return;
+    if (!user || !hasMail) return;
     let cancelled = false;
     (user.demo ? Promise.resolve(demoFolderData) : api("/folders"))
       .then((data) => {
@@ -259,7 +278,7 @@ export default function Mailbox() {
     return () => {
       cancelled = true;
     };
-  }, [user, refresh, showError, demoFolderData]);
+  }, [user, hasMail, refresh, showError, demoFolderData]);
   useEffect(() => {
     if (user?.demo)
       localStorage.setItem("demoFolders", JSON.stringify(demoFolderData));
@@ -272,7 +291,10 @@ export default function Mailbox() {
     return () => clearTimeout(timer);
   }, [query]);
   useEffect(() => {
-    if (!user || !ready) return;
+    if (!user || !ready || !hasMail) {
+      setLoading(false);
+      return;
+    }
     const controller = new AbortController();
     const recovery = listRecovery.current;
     async function load() {
@@ -380,6 +402,7 @@ export default function Mailbox() {
   }, [
     user,
     ready,
+    hasMail,
     folder,
     page,
     settings.pageSize,
@@ -393,6 +416,7 @@ export default function Mailbox() {
   useEffect(() => {
     if (
       !ready ||
+      !hasMail ||
       !user ||
       view !== "message" ||
       !Number.isInteger(routeUid) ||
@@ -413,9 +437,9 @@ export default function Mailbox() {
     );
     setSelected(new Set([messageKey(restored)]));
     setImages(false);
-  }, [ready, user, view, routeUid, routeFolder]);
+  }, [ready, hasMail, user, view, routeUid, routeFolder]);
   useEffect(() => {
-    if (!active || !user) return;
+    if (!active || !user || !hasMail) return;
     const controller = new AbortController();
     async function load() {
       setReading(true);
@@ -446,7 +470,15 @@ export default function Mailbox() {
     }
     load();
     return () => controller.abort();
-  }, [active, user, images, settings.externalImages, showError, readerRefresh]);
+  }, [
+    active,
+    user,
+    hasMail,
+    images,
+    settings.externalImages,
+    showError,
+    readerRefresh,
+  ]);
   useEffect(() => {
     if (
       !active ||
@@ -497,7 +529,7 @@ export default function Mailbox() {
     showError,
   ]);
   useEffect(() => {
-    if (!ready || user?.demo || !settings.refreshInterval) return;
+    if (!ready || !hasMail || user?.demo || !settings.refreshInterval) return;
     const controller = new AbortController();
     let stopped = false,
       running = false;
@@ -568,6 +600,7 @@ export default function Mailbox() {
   }, [
     ready,
     user,
+    hasMail,
     settings.refreshInterval,
     settings.checkAllFolders,
     settings.browserNotifications,
@@ -812,6 +845,10 @@ export default function Mailbox() {
     }
   }
   function newCompose(to = "") {
+    if (!hasMail) {
+      setViewParams({ view: "settings", settingsTab: "account" });
+      return;
+    }
     if (settings.composeNewWindow) {
       const popup = window.open("", "_blank", "width=980,height=820");
       if (popup) setComposerWindow(popup);
@@ -844,7 +881,7 @@ export default function Mailbox() {
       kind === "replyAll"
         ? [...detail.to, ...detail.cc]
             .map((a) => a.address)
-            .filter((a) => a !== user.email && a !== from)
+            .filter((a) => a !== (user.mailEmail || user.email) && a !== from)
             .filter((a, i, arr) => arr.indexOf(a) === i)
             .join(", ")
         : "";
@@ -1262,6 +1299,19 @@ export default function Mailbox() {
                 attachments={detail.attachments}
                 downloading={downloading}
                 onDownload={(index) => download("attachment", index)}
+                onSave={
+                  user.permissions?.files === false
+                    ? undefined
+                    : (attachment) => {
+                        if (user.demo) setNotice(t("demoAction"));
+                        else
+                          setAttachmentTarget({
+                            ...attachment,
+                            folder: detail.folder,
+                            uid: detail.uid,
+                          });
+                      }
+                }
               />
               {settings.showHtml &&
                 detail.remoteImagesBlocked &&
@@ -1394,6 +1444,7 @@ export default function Mailbox() {
           <button
             className={section === "calendar" ? "active" : ""}
             aria-current={section === "calendar" ? "page" : undefined}
+            disabled={user.permissions?.calendar === false}
             onClick={() => navigateSection("calendar")}
           >
             <CalendarDays size={18} />
@@ -1410,6 +1461,7 @@ export default function Mailbox() {
           <button
             className={section === "files" ? "active" : ""}
             aria-current={section === "files" ? "page" : undefined}
+            disabled={user.permissions?.files === false}
             onClick={() => navigateSection("files")}
           >
             <HardDrive size={18} />
@@ -1430,6 +1482,7 @@ export default function Mailbox() {
             title={t("logout")}
             onClick={async () => {
               if (
+                hasMail &&
                 (settings.emptyTrashOnLogout !== "never" ||
                   settings.expungeInboxOnLogout) &&
                 !confirm(t("maintenanceConfirm"))
@@ -1469,7 +1522,42 @@ export default function Mailbox() {
           }}
         />
       )}
-      <div className="workspace" hidden={section !== "mail"}>
+      {section === "mail" && !hasMail && (
+        <div className="workspace">
+          <WorkspacePage title={t("multiuser.welcome")}>
+            <div className="identity-welcome">
+              <Mail size={42} />
+              <h2>{t("multiuser.mailOptional")}</h2>
+              <p>{t("multiuser.welcomeHint")}</p>
+              <button
+                className="primary"
+                onClick={() =>
+                  setViewParams({ view: "settings", settingsTab: "account" })
+                }
+              >
+                {t("multiuser.connect")}
+              </button>
+              <div className="identity-inline">
+                <button
+                  className="secondary"
+                  disabled={user.permissions?.calendar === false}
+                  onClick={() => navigateSection("calendar")}
+                >
+                  {t("calendar.title")}
+                </button>
+                <button
+                  className="secondary"
+                  disabled={user.permissions?.files === false}
+                  onClick={() => navigateSection("files")}
+                >
+                  {t("files.title")}
+                </button>
+              </div>
+            </div>
+          </WorkspacePage>
+        </div>
+      )}
+      <div className="workspace" hidden={section !== "mail" || !hasMail}>
         <PanelGroup direction="horizontal" autoSaveId="post-sidebar">
           <Panel id="sidebar" defaultSize={18} minSize={12} maxSize={35}>
             <aside className="folder-sidebar">
@@ -1516,7 +1604,7 @@ export default function Mailbox() {
                   </span>
                   <div>
                     <strong>{settings.name || user.email.split("@")[0]}</strong>
-                    <small>{user.email}</small>
+                    <small>{user.mailEmail || user.email}</small>
                   </div>
                   <button
                     className="icon-button"
@@ -1821,8 +1909,8 @@ export default function Mailbox() {
         <div className="workspace">
           {ready ? (
             <SettingsPage
-              key={viewParams.get("settingsTab") || "interface"}
-              initialTab={viewParams.get("settingsTab") || "interface"}
+              key={viewParams.get("settingsTab") || "account"}
+              initialTab={viewParams.get("settingsTab") || "account"}
               initial={settings}
               folders={folders}
               onSaved={saveSettings}
@@ -1848,7 +1936,7 @@ export default function Mailbox() {
           />
         </div>
       )}
-      {section === "calendar" && (
+      {section === "calendar" && user.permissions?.calendar !== false && (
         <div className="workspace">
           <Suspense
             fallback={<div className="empty-state">{t("loading")}</div>}
@@ -1860,18 +1948,35 @@ export default function Mailbox() {
           </Suspense>
         </div>
       )}
-      {(section === "files" || filesVisited) && (
-        <div className="workspace files-workspace" hidden={section !== "files"}>
-          <Suspense
-            fallback={<div className="empty-state">{t("loading")}</div>}
+      {(section === "files" || filesVisited) &&
+        user.permissions?.files !== false && (
+          <div
+            className="workspace files-workspace"
+            hidden={section !== "files"}
           >
-            <FilesPage
-              settings={settings}
-              active={section === "files"}
-              onBack={() => navigateSection("mail")}
-            />
-          </Suspense>
-        </div>
+            <Suspense
+              fallback={<div className="empty-state">{t("loading")}</div>}
+            >
+              <FilesPage
+                settings={settings}
+                active={section === "files"}
+                onBack={() => navigateSection("mail")}
+              />
+            </Suspense>
+          </div>
+        )}
+      {attachmentTarget && (
+        <SaveAttachmentDialog
+          popup={readerWindow}
+          attachment={attachmentTarget}
+          onClose={() => setAttachmentTarget(null)}
+          onSaved={(result, destination) => {
+            setAttachmentTarget(null);
+            setNotice(
+              t("attachmentSave.saved", { name: result.name, destination }),
+            );
+          }}
+        />
       )}
       {compose && (
         <Composer

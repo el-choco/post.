@@ -15,6 +15,14 @@ test("OAuth form accepts canonical HTTPS roots and produces exact provider callb
     oauthCallbackUrl("microsoft", "https://mail.example.org/"),
     "https://mail.example.org/api/calendar/oauth/microsoft/callback",
   );
+  assert.equal(
+    oauthCallbackUrl("google", "https://mail.example.org", "mail"),
+    "https://mail.example.org/api/mail/oauth/google/callback",
+  );
+  assert.equal(
+    oauthCallbackUrl("microsoft", "https://mail.example.org", "mail"),
+    "https://mail.example.org/api/mail/oauth/microsoft/callback",
+  );
 });
 test("OAuth form rejects Google IP addresses and malformed origins, allowing local development", () => {
   for (const value of [

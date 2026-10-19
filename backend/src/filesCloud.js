@@ -55,7 +55,6 @@ function base(c) {
   return c.kind === "google" ? GOOGLE : GRAPH;
 }
 async function request(c, url, options = {}) {
-                                                                       
   if (new URL(url).origin !== new URL(base(c)).origin)
     throw fail("files.errors.remote", 502);
   const token = await oauth.credentials(c);
@@ -176,8 +175,7 @@ async function list(
   const parentId = await folder(c, parent);
   if (c.kind === "google") {
     let q = `trashed=${trash ? "true" : "false"}`;
-                                                                                
-                                                                        
+
     if (!trash) q += ` and '${escapeQuery(parentId)}' in parents`;
     if (query) q += ` and name contains '${escapeQuery(query)}'`;
     if (folders) q += " and mimeType='application/vnd.google-apps.folder'";
@@ -371,7 +369,7 @@ async function download(c, itemId) {
   ) {
     const target = new URL(res.headers.location, url).href;
     res.destroy();
-                                                                                   
+
     url = target;
     res = await net.request(target);
   }
@@ -489,7 +487,6 @@ async function upload(c, row, progress) {
   }
 }
 async function officeDescriptor(c, itemId) {
-                                                                     
   const row = await item(c, itemId);
   if (c.kind === "google") {
     const res = await request(
@@ -524,14 +521,6 @@ async function officeDescriptor(c, itemId) {
   };
 }
 async function officeReplace(c, itemId, bytes, ext, expected) {
-  const current = await officeDescriptor(c, itemId);
-  if (
-    current.item.folder ||
-    current.item.native ||
-    current.item.readOnly ||
-    JSON.stringify(current.revision) !== JSON.stringify(expected)
-  )
-    throw fail("office.errors.conflict", 409);
   const mime =
     {
       pdf: "application/pdf",
@@ -543,6 +532,17 @@ async function officeReplace(c, itemId, bytes, ext, expected) {
       odp: "application/vnd.oasis.opendocument.presentation",
       rtf: "application/rtf",
     }[ext] || "application/octet-stream";
+  return replaceFile(c, itemId, bytes, mime, expected);
+}
+async function replaceFile(c, itemId, bytes, mime, expected) {
+  const current = await officeDescriptor(c, itemId);
+  if (
+    current.item.folder ||
+    current.item.native ||
+    current.item.readOnly ||
+    JSON.stringify(current.revision) !== JSON.stringify(expected)
+  )
+    throw fail("office.errors.conflict", 409);
   const res = await request(
     c,
     c.kind === "google"
@@ -580,6 +580,8 @@ async function officeReplace(c, itemId, bytes, ext, expected) {
       };
 }
 module.exports = {
+  findChild,
+  replaceFile,
   officeDescriptor,
   officeReplace,
   discover,

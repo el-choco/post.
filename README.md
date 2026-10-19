@@ -16,7 +16,9 @@
 
 | Bereich | Funktionen |
 |---|---|
-| 🔐 Anmeldung | E-Mail-Adresse und Passwort oder App-Passwort; automatische IMAP-/SMTP-Erkennung |
+| 🔐 Anmeldung | Eigenes post.-Konto mit Registrierung und Administrator-Freischaltung; Mailverbindung optional per OAuth2 oder App-Passwort |
+| 👥 Mehrbenutzer | Administrator-/Benutzerrollen, Gruppen und Berechtigungen für Mail, Kalender und Dateien |
+| 🤝 Freigaben | Private Dateien/Ordner für Benutzer und Gruppen; geerbte Lese-, Bearbeitungs- und Löschrechte |
 | 📬 Postfach | Listenansicht, Lesebereich unten oder rechts; seitenweiser Abruf und getrennte Hintergrundprüfung |
 | ↔️ Oberfläche | Verschiebbare Ordnerleiste, Lesebereiche und Spalten |
 | 🌗 Darstellung | Heller und dunkler Modus |
@@ -31,10 +33,16 @@
 | 📝 Dokumente | Optional: ONLYOFFICE-Vorschau und Bearbeitung für PDF, DOCX, XLSX und PPTX; Zurückspeichern in privaten Speicher, Google Drive oder OneDrive |
 | 📥 Import | Google-/Outlook-CSV, einschließlich Kontakten ohne E-Mail-Adresse |
 | 📤 Export | Kontakte als CSV/vCard; Nachrichten als EML |
-| 🩺 Diagnose | Mail-Ladezeiten, Fehlercodes und einzelne Abrufschritte pro Postfach; Filter und JSON-Download |
+| 🩺 Diagnose | Mail-Ladezeiten, Fehlercodes und einzelne Abrufschritte pro Benutzer; Filter und JSON-Download |
 | ⚙️ Einstellungen | Sprache, Darstellung, Identität, Signatur, Spezialordner und Benachrichtigungen |
 
+### 👥 Neu in Version 2.0
+
+Eigene Benutzeranmeldung, Registrierung, Administratorverwaltung und Dateifreigaben sind in [MULTIUSER.md](MULTIUSER.md) beschrieben. Beim ersten Start den einmaligen Einrichtungscode mit `docker compose exec backend cat /app/data/admin-setup-token` auslesen; in Portainer die Backend-Konsole verwenden. Bestehende Installationen vor dem Update sichern und zuerst das bisherige Mailkonto verbinden, bevor neue Daten angelegt werden.
+
 ### ⚡ Mailabruf und Fehlerdiagnose
+
+Ab Version 1.6.0 lassen sich Mail-Anhänge neben dem Herunterladen auch direkt in Dateien speichern: im privaten Speicher oder in einem verbundenen Google Drive/OneDrive, jeweils mit Zielordner und bearbeitbarem Dateinamen. Bei Namenskonflikten gibt es eine Kopie mit neuem Namen oder bewusstes Ersetzen, wenn die Datei sicher ersetzbar ist. Details stehen in [FILES.md](FILES.md).
 
 Ab Version 1.5.5 wird bei einer nicht mehr verfügbaren Nachricht die Mail-Liste automatisch frisch vom Server geladen. Die Nachricht wird geschlossen und ein verständlicher Hinweis angezeigt. Schlägt die Aktualisierung fehl, bleibt der Fehler mit einer Wiederholungsmöglichkeit sichtbar.
 
@@ -61,13 +69,13 @@ Bei wenig freiem RAM die Standardvariante wählen. ONLYOFFICE nennt **mindestens
 
 Die optionale Kalenderanbindung und OAuth-Einrichtung sind in [CALENDAR.md](CALENDAR.md) beschrieben. Client-ID und Client-Secret für Google/Microsoft können direkt über **Kalender → Kalender hinzufügen → Kalender verbinden** eingegeben werden. Google benötigt dafür eine HTTPS-Domain. Der persönliche Kalender funktioniert ohne zusätzliche Konfiguration.
 
-Der Bereich **Dateien** bietet sofort einen privaten Speicher auf deinem Server. Optional kannst du über **Dateien → Cloud hinzufügen** Google Drive oder OneDrive verbinden. Dafür die zusätzlichen Datei-Berechtigungen und Rücksprungadressen beim Anbieter einrichten; die Kalenderverbindung bleibt getrennt. Anleitung, Speichergrenzen und Proxy-Hinweise stehen in [FILES.md](FILES.md). Standard: 1 GB pro Datei und 5 GB privater Speicher pro Postfach. Lokale Dateiinhalte werden verschlüsselt im bestehenden Datenvolume gespeichert; Dateinamen und Metadaten liegen in SQLite.
+Der Bereich **Dateien** bietet sofort einen privaten Speicher auf deinem Server. Optional kannst du über **Dateien → Cloud hinzufügen** Google Drive oder OneDrive verbinden. Dafür die zusätzlichen Datei-Berechtigungen und Rücksprungadressen beim Anbieter einrichten; die Kalenderverbindung bleibt getrennt. Anleitung, Speichergrenzen und Proxy-Hinweise stehen in [FILES.md](FILES.md). Standard: 1 GB pro Datei und 5 GB privater Speicher pro Benutzer. Lokale Dateiinhalte werden verschlüsselt im bestehenden Datenvolume gespeichert; Dateinamen und Metadaten liegen in SQLite.
 
 **Voraussetzungen:**
 
 - Docker mit Docker Compose und Linux-Containern
-- Ein E-Mail-Konto mit aktiviertem IMAP
-- Passwort oder App-Passwort des E-Mail-Kontos
+- Für den öffentlichen Zugriff eine HTTPS-Domain, z. B. über Nginx Proxy Manager
+- Nur für die optionale Mailverbindung: IMAP und OAuth2 oder Mail-/App-Passwort beim Anbieter
 
 Die Datei [docker-compose.yml](docker-compose.yml) herunterladen und in ihrem Verzeichnis ausführen:
 
@@ -110,7 +118,7 @@ Die Webmail-Images müssen die ONLYOFFICE-Einbindung enthalten (**ab v1.4.0**). 
 3. Die folgenden Variablen in der `.env` bzw. unter **Environment variables** des Portainer-Stacks setzen:
 
 ```dotenv
-WEBMAIL_VERSION=1.5.5
+WEBMAIL_VERSION=2.0.0
 WEBMAIL_PORT=8886
 ONLYOFFICE_URL=https://office.example.com
 ONLYOFFICE_JWT_SECRET=HIER_DEN_ERZEUGTEN_SCHLUESSEL_EINTRAGEN
@@ -153,24 +161,24 @@ Für Docker Compose die [`.env.example`](.env.example) als `.env` neben der gew�
 | Variable | Bedeutung | Standard |
 |---|---|---|
 | `DOCKERHUB_NAMESPACE` | Namensraum der bereitgestellten Webmail-Images; normalerweise beibehalten | `paquele` |
-| `WEBMAIL_VERSION` | Image-Version für Frontend und Backend; z. B. `1.5.5` oder `latest` | `latest` |
+| `WEBMAIL_VERSION` | Image-Version für Frontend und Backend; z. B. `2.0.0` oder `latest` | `latest` |
 | `WEBMAIL_PORT` | Freier Port auf dem Docker-Host für die Webmail | `8886` |
 | `WEBMAIL_DATA_DIR` | Optionaler Host-Datenordner statt des benannten Volumes; enthält Datenbank, Schlüssel und lokale Dateien | Docker-Volume `webmail_data` |
 | `FILES_MAX_UPLOAD_MB` | Maximale Größe einer einzelnen hochgeladenen Datei in MiB; unabhängig vom Office-Limit | `1024` (1 GiB) |
-| `FILES_QUOTA_MB` | Private Speicherquote pro Postfach in MiB; Papierkorb und verschlüsselte Cloud-/Office-Arbeitskopien zählen mit | `5120` (5 GiB) |
+| `FILES_QUOTA_MB` | Private Speicherquote pro Benutzer in MiB; Papierkorb und verschlüsselte Cloud-/Office-Arbeitskopien zählen mit | `5120` (5 GiB) |
 
 Ein eigener Host-Datenordner muss für den Backend-Benutzer mit UID **1000** schreibbar sein. Bei einem Update dieselbe Datenablage und denselben Compose-Projektnamen beibehalten. Größen als positive ganze Zahlen angeben; **1024 MiB = 1 GiB**. Für temporäre Arbeitskopien Platz innerhalb der Quote lassen.
 
 #### Kalender und Cloud-Verbindungen: optionale Servervorgaben
 
-**Du kannst die OAuth-Daten direkt beim Verbinden in der Webmail eingeben. Dann dürfen die folgenden Servervorgaben leer bleiben bzw. fehlen.** Die über die Oberfläche gespeicherten Einstellungen gelten pro Postfach und haben Vorrang vor den Servervorgaben. Eine Dateiverbindung ohne eigene OAuth-Konfiguration kann die Kalenderkonfiguration desselben Anbieters übernehmen; die Berechtigungen und Anmeldungen für Kalender und Dateien bleiben getrennt.
+**Du kannst die OAuth-Daten direkt beim Verbinden in der Webmail eingeben. Dann dürfen die folgenden Servervorgaben leer bleiben bzw. fehlen.** Die über die Oberfläche gespeicherten Einstellungen gelten pro Benutzer und haben Vorrang vor den Servervorgaben. Eine Dateiverbindung ohne eigene OAuth-Konfiguration kann die Kalenderkonfiguration desselben Anbieters übernehmen; die Berechtigungen und Anmeldungen für Kalender und Dateien bleiben getrennt.
 
 | Variable | Bedeutung | Standard |
 |---|---|---|
 | `PUBLIC_BASE_URL` | Öffentliche HTTPS-Adresse der **Webmail**, z. B. `https://post.example.com`, ohne Unterpfad; Grundlage der OAuth-Rücksprungadressen, wenn Servervorgaben verwendet werden | leer |
-| `GOOGLE_CLIENT_ID` | Optionale Google-OAuth-Client-ID als Vorgabe für Kalender/Drive | leer |
+| `GOOGLE_CLIENT_ID` | Optionale Google-OAuth-Client-ID als Vorgabe für Mail/Kalender/Drive | leer |
 | `GOOGLE_CLIENT_SECRET` | Zugehöriges Google-Client-Secret; kein Mail-/App-Passwort | leer |
-| `MICROSOFT_CLIENT_ID` | Optionale Microsoft-OAuth-Anwendungs-ID als Vorgabe für Kalender/OneDrive | leer |
+| `MICROSOFT_CLIENT_ID` | Optionale Microsoft-OAuth-Anwendungs-ID als Vorgabe für Mail/Kalender/OneDrive | leer |
 | `MICROSOFT_CLIENT_SECRET` | Zugehöriger Microsoft-Client-Secret-Wert | leer |
 | `MICROSOFT_TENANT_ID` | Microsoft-Verzeichnis bzw. Mandant für die Servervorgabe; eine konkrete Tenant-ID ist ebenfalls möglich | `common` |
 | `ALLOW_PRIVATE_CALDAV` | `true` erlaubt zusätzlich CalDAV-Verbindungen zu privaten/internen Serveradressen; nur bei Bedarf aktivieren | `false` |
@@ -194,13 +202,9 @@ Die optionale Datei überschreibt die drei Werte **ENABLED**, **INTERNAL_URL** u
 
 ### 🔐 Anmeldung
 
-Melde dich mit deiner **E-Mail-Adresse und deinem Passwort oder App-Passwort** an.
+Melde dich mit deinem **eigenen post.-Benutzerkonto und post.-Passwort** an. Neue Benutzer können sich registrieren und werden durch einen Administrator freigeschaltet. Für die erste Einrichtung wird der Code aus dem Backend-Datenvolume benötigt; siehe [MULTIUSER.md](MULTIUSER.md).
 
-Die Anwendung ermittelt die IMAP- und SMTP-Einstellungen automatisch und prüft die Verbindung.
-
-Bei Zwei-Faktor-Anmeldung wird häufig ein App-Passwort benötigt. IMAP muss beim Mailanbieter aktiviert sein.
-
-> Konten, die ausschließlich OAuth2 erlauben, werden derzeit nicht unterstützt. Individuelle Server ohne passende Autokonfiguration können möglicherweise nicht automatisch erkannt werden.
+Unter **Einstellungen → Konto & Verbindungen** anschließend Google oder Microsoft per OAuth2 verbinden. Bei anderen Anbietern werden IMAP und SMTP automatisch erkannt und die Verbindung mit dem Mail-/App-Passwort geprüft. Auch ohne Mailkonto stehen Kontakte, Kalender und Dateien zur Verfügung. Persönliche Verbindungen und Daten bleiben dem jeweiligen Benutzer zugeordnet.
 
 ### 🖥️ Dein Postfach, deine Ansicht
 
@@ -208,7 +212,7 @@ Wähle zwischen drei Ansichten:
 
 | Ansicht | Beschreibung |
 |---|---|
-| 📋 Liste | Nachrichtenliste mit separatem Maildialog |
+| 📋 Liste | Nachrichtenliste; Nachrichten öffnen im Arbeitsbereich |
 | ⬇️ Lesebereich unten | Nachrichtenliste oben, Vorschau darunter |
 | ➡️ Lesebereich rechts | Nachrichtenliste links, Vorschau daneben |
 
@@ -384,7 +388,7 @@ Unter **Einstellungen → Theme-Editor** kannst du die Oberfläche anpassen:
 - **Vorschau:** Änderungen erscheinen sofort. Erst **Speichern** übernimmt sie dauerhaft; Verlassen der Einstellungen ohne Speichern verwirft die Vorschau.
 - **Zurücksetzen:** **Standard wiederherstellen** setzt beide Farbmodi und die Schrift zurück. Danach speichern, um den Standard dauerhaft zu übernehmen.
 
-Das Theme wird pro Postfach in SQLite gespeichert und bei der Anmeldung auf anderen Geräten geladen. In der Demo bleibt es lokal im Browser. Bei wenig Textkontrast bietet der Editor eine passende Textfarbe an. HTML-Mails und ONLYOFFICE-Dokumente behalten ihre eigene Formatierung. Für den Theme-Editor sind keine zusätzlichen Container, `.env`-Variablen oder Schrift-Downloads nötig.
+Das Theme wird pro Benutzer in SQLite gespeichert und bei der Anmeldung auf anderen Geräten geladen. In der Demo bleibt es lokal im Browser. Bei wenig Textkontrast bietet der Editor eine passende Textfarbe an. HTML-Mails und ONLYOFFICE-Dokumente behalten ihre eigene Formatierung. Für den Theme-Editor sind keine zusätzlichen Container, `.env`-Variablen oder Schrift-Downloads nötig.
 
 ### 🖼️ Externe Bilder
 
@@ -439,7 +443,9 @@ Die Demo verbindet sich mit keinem Mailserver und versendet keine Nachrichten.
 
 | Area | Features |
 |---|---|
-| 🔐 Sign-in | Email address and password or app password; automatic IMAP/SMTP discovery |
+| 🔐 Sign-in | Separate post. account, registration and administrator approval; optional mailbox via OAuth2 or app password |
+| 👥 Multiple users | Administrator/user roles, groups and mail/calendar/file permissions |
+| 🤝 Sharing | Private files/folders shared with users/groups; inherited view, edit and delete rights |
 | 📬 Mailbox | List view, bottom or right reading pane; page-sized fetching and separate background checks |
 | ↔️ Interface | Resizable folder sidebar, reading panes and columns |
 | 🌗 Appearance | Light and dark mode |
@@ -454,10 +460,16 @@ Die Demo verbindet sich mit keinem Mailserver und versendet keine Nachrichten.
 | 📝 Documents | Optional ONLYOFFICE viewing/editing for PDF, DOCX, XLSX and PPTX; save back to private storage, Google Drive or OneDrive |
 | 📥 Import | Google/Outlook CSV, including contacts without email addresses |
 | 📤 Export | Contacts as CSV/vCard; messages as EML |
-| 🩺 Diagnostics | Mail request timings, error codes and loading steps per mailbox; filters and JSON export |
+| 🩺 Diagnostics | Mail request timings, error codes and loading steps per user; filters and JSON export |
 | ⚙️ Settings | Language, appearance, identity, signature, special folders and notifications |
 
+### 👥 New in version 2.0
+
+Separate user sign-in, registration, administration and file sharing are documented in [MULTIUSER.md](MULTIUSER.md). On first startup, read the setup code with `docker compose exec backend cat /app/data/admin-setup-token`, or use the backend console in Portainer. Back up existing installations before upgrading and reconnect the previous mailbox before creating new data.
+
 ### ⚡ Mail loading and diagnostics
+
+Since version 1.6.0, mail attachments can also be saved directly to Files: private storage or a connected Google Drive/OneDrive, with a destination folder and editable file name. Name conflicts offer a renamed copy or explicit replacement when supported safely. See [FILES.md](FILES.md).
 
 Since version 1.5.5, a message that is no longer available is closed and its list is automatically refreshed from the server. A clear notice explains what happened; failed refreshes remain visible with a retry option.
 
@@ -465,7 +477,7 @@ Since version 1.5.4, idle IMAP connections remain available for five minutes, al
 
 Since version 1.5.3, interactive mail reads can take ownership of an idle background connection for the same mailbox. Abandoned list reads are cancelled when no callers remain, so later reads do not inherit an old timeout. Active background work and other waiting callers remain protected.
 
-Since version 1.5.2, **Settings → Diagnostics** shows request durations, error codes, request IDs and individual mail loading steps. **Download log** exports the entries as JSON. Up to 1000 entries per mailbox are retained for seven days in the existing SQLite database; recording starts with this update. Passwords, tokens, message contents, subjects, search terms and folder names are excluded. No data is automatically sent to an external diagnostic service.
+Since version 1.5.2, **Settings → Diagnostics** shows request durations, error codes, request IDs and individual mail loading steps. **Download log** exports the entries as JSON. Up to 1000 entries per user are retained for seven days in the existing SQLite database; recording starts with this update. Passwords, tokens, message contents, subjects, search terms and folder names are excluded. No data is automatically sent to an external diagnostic service.
 
 Unfiltered lists fetch only the requested page. Background checks use a separate connection. Disabling all-folder checks polls only INBOX; other counters update when opened. Errors remain visible with expandable details. See [PERFORMANCE.md](PERFORMANCE.md) for deadlines, large attachments and troubleshooting.
 
@@ -484,13 +496,13 @@ Choose the standard variant when available RAM is limited. ONLYOFFICE lists **at
 
 Optional calendar connections and OAuth setup are described in [CALENDAR.md](CALENDAR.md). Enter Google/Microsoft client credentials directly through **Calendar → Add calendar → Connect calendar**. Google requires an HTTPS domain. The personal calendar works without additional configuration.
 
-**Files** provides private storage on your server immediately. Optionally connect Google Drive or OneDrive through **Files → Add cloud storage**. Register the additional file permissions and callback URLs; calendar connections remain separate. See [FILES.md](FILES.md) for setup, limits and reverse-proxy settings. Defaults: 1 GB per file and 5 GB private storage per mailbox. Local file contents are encrypted in the existing data volume; filenames and metadata are stored in SQLite.
+**Files** provides private storage on your server immediately. Optionally connect Google Drive or OneDrive through **Files → Add cloud storage**. Register the additional file permissions and callback URLs; calendar connections remain separate. See [FILES.md](FILES.md) for setup, limits and reverse-proxy settings. Defaults: 1 GB per file and 5 GB private storage per user. Local file contents are encrypted in the existing data volume; filenames and metadata are stored in SQLite.
 
 **Requirements:**
 
 - Docker with Docker Compose and Linux containers
-- An email account with IMAP enabled
-- Your account password or app password
+- An HTTPS domain for public access, e.g. through Nginx Proxy Manager
+- Only for optional mail access: IMAP and provider OAuth2 or an email/app password
 
 Download [docker-compose.yml](docker-compose.yml) and run this command from its directory:
 
@@ -533,7 +545,7 @@ Use webmail images containing the ONLYOFFICE integration (**v1.4.0 or later**). 
 3. Set these values in `.env` or the Portainer stack's **Environment variables**:
 
 ```dotenv
-WEBMAIL_VERSION=1.5.5
+WEBMAIL_VERSION=2.0.0
 WEBMAIL_PORT=8886
 ONLYOFFICE_URL=https://office.example.com
 ONLYOFFICE_JWT_SECRET=REPLACE_WITH_YOUR_GENERATED_KEY
@@ -576,24 +588,24 @@ For Docker Compose, save [`.env.example`](.env.example) as `.env` next to the ch
 | Variable | Purpose | Default |
 |---|---|---|
 | `DOCKERHUB_NAMESPACE` | Namespace of the provided webmail images; normally leave unchanged | `paquele` |
-| `WEBMAIL_VERSION` | Image version for frontend and backend, such as `1.5.5` or `latest` | `latest` |
+| `WEBMAIL_VERSION` | Image version for frontend and backend, such as `2.0.0` or `latest` | `latest` |
 | `WEBMAIL_PORT` | Available Docker host port for webmail | `8886` |
 | `WEBMAIL_DATA_DIR` | Optional host data directory instead of the named volume; holds the database, key and local files | Docker volume `webmail_data` |
 | `FILES_MAX_UPLOAD_MB` | Maximum size of one uploaded file in MiB; independent of the Office limit | `1024` (1 GiB) |
-| `FILES_QUOTA_MB` | Private storage quota per mailbox in MiB; includes trash and encrypted cloud/Office working copies | `5120` (5 GiB) |
+| `FILES_QUOTA_MB` | Private storage quota per user in MiB; includes trash and encrypted cloud/Office working copies | `5120` (5 GiB) |
 
 A custom host directory must be writable by the backend user with UID **1000**. Keep the same data location and Compose project name when updating. Set sizes as positive integers; **1024 MiB = 1 GiB**. Leave space within the quota for temporary working copies.
 
 #### Calendars and cloud connections: optional server defaults
 
-**You can enter OAuth credentials directly when connecting in webmail. These server defaults may then remain blank or be omitted.** Settings saved through the interface apply per mailbox and take precedence over server defaults. A file connection without its own OAuth configuration can fall back to the same provider's calendar configuration; calendar/file permissions and authorization remain separate.
+**You can enter OAuth credentials directly when connecting in webmail. These server defaults may then remain blank or be omitted.** Settings saved through the interface apply per user and take precedence over server defaults. A file connection without its own OAuth configuration can fall back to the same provider's calendar configuration; calendar/file permissions and authorization remain separate.
 
 | Variable | Purpose | Default |
 |---|---|---|
 | `PUBLIC_BASE_URL` | Public HTTPS **webmail** address, such as `https://post.example.com`, with no subpath; basis for OAuth callbacks when using server defaults | blank |
-| `GOOGLE_CLIENT_ID` | Optional Google OAuth client ID as a calendar/Drive default | blank |
+| `GOOGLE_CLIENT_ID` | Optional Google OAuth client ID as a mail/calendar/Drive default | blank |
 | `GOOGLE_CLIENT_SECRET` | Matching Google client secret; not a mail/app password | blank |
-| `MICROSOFT_CLIENT_ID` | Optional Microsoft OAuth application ID as a calendar/OneDrive default | blank |
+| `MICROSOFT_CLIENT_ID` | Optional Microsoft OAuth application ID as a mail/calendar/OneDrive default | blank |
 | `MICROSOFT_CLIENT_SECRET` | Matching Microsoft client secret value | blank |
 | `MICROSOFT_TENANT_ID` | Microsoft directory/tenant for the server default; a specific tenant ID can also be used | `common` |
 | `ALLOW_PRIVATE_CALDAV` | `true` additionally allows CalDAV connections to private/internal server addresses; enable only if needed | `false` |
@@ -617,13 +629,9 @@ The optional file fixes **ENABLED**, **INTERNAL_URL** and **CALLBACK_BASE_URL**,
 
 ### 🔐 Sign-in
 
-Sign in with your **email address and password or app password**.
+Sign in with your **own post. user account and post. password**. New users can register and are approved by an administrator. First setup requires the code in the backend data volume; see [MULTIUSER.md](MULTIUSER.md).
 
-The application automatically discovers the IMAP and SMTP settings and checks the connection.
-
-Accounts with two-factor authentication often require an app password. IMAP must be enabled by your email provider.
-
-> Accounts requiring OAuth2 exclusively are not currently supported. Custom servers without suitable autoconfiguration may not be discovered automatically.
+Then connect Google or Microsoft using OAuth2 in **Settings → Account & connections**. Other providers retain automatic IMAP/SMTP discovery with an email/app password. Contacts, calendars and files also work without a connected mailbox. Personal connections and data belong to their respective user.
 
 ### 🖥️ Your mailbox, your layout
 
@@ -631,7 +639,7 @@ Choose between three views:
 
 | View | Description |
 |---|---|
-| 📋 List | Message list with a separate message dialog |
+| 📋 List | Message list; messages open in the workspace |
 | ⬇️ Bottom reading pane | Message list above, preview below |
 | ➡️ Right reading pane | Message list on the left, preview on the right |
 
@@ -807,7 +815,7 @@ Open **Settings → Theme editor** to customize the interface:
 - **Preview:** Changes appear immediately. Choose **Save** to keep them; leaving settings without saving discards the preview.
 - **Reset:** **Restore defaults** resets both color modes and the font. Save to keep the restored defaults.
 
-Themes are stored per mailbox in SQLite and loaded when signing in on other devices. The demo stores them locally in the browser. When text contrast is low, the editor offers a suitable text color. HTML emails and ONLYOFFICE documents retain their own formatting. No additional containers, `.env` variables or font downloads are needed.
+Themes are stored per user in SQLite and loaded when signing in on other devices. The demo stores them locally in the browser. When text contrast is low, the editor offers a suitable text color. HTML emails and ONLYOFFICE documents retain their own formatting. No additional containers, `.env` variables or font downloads are needed.
 
 ### 🖼️ External images
 
